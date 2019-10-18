@@ -5,4 +5,5 @@
 
 #!/bin/bash
 
-avrdude -p atmega328p -c usbasp -e -U flash:w:build/pecke.hex:i
+#avrdude -p atmega32u4 -c usbasp -e -U flash:w:build/pecka.hex:i
+avrdude -p atmega328p -c arduino -P /dev/ttyUSB0 -b 57600 -e -U flash:w:build/pecka.hex:i

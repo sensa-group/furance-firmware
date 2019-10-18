@@ -22,7 +22,7 @@ all: $(OBJS)
 	$(CC) $(CCFLAGS) -o $(BINDIR)/$(PROJECTNAME).elf $^ $(LIBS)
 
 $(BINDIR)/%.o: $(SRCDIR)/%.c
-	$(CC) $(CCFLAGS) -o $@ -c $<
+	$(CC) $(CCFLAGS) -o $@ -c $< -I $(INCDIR)
 
 clean:
 	rm -Rf build/*

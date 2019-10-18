@@ -1,0 +1,100 @@
+/*
+ * File name:       display.c
+ * Description:     Module for display
+ * Author:          Milos Zivlak <milos.zivlak@sensa-group.net>
+ * Date:            2019-10-14
+ * 
+ */
+
+#include "system.h"
+#include "display.h"
+
+#include <avr/io.h>
+
+#include "lcdpcf8574.h"
+
+#define _LCD_NOBACKLIGHT 0x00
+#define _LCD_BACKLIGHT   0xFF
+
+#define _EN 6
+#define _RW 5
+#define _RS 4
+#define _D4 0
+#define _D5 1
+#define _D6 2
+#define _D7 3
+
+static void _intToStr(int number, char *str);
+
+void DISPLAY_init(void)
+{
+    lcd_init(LCD_DISP_ON);
+    lcd_clrscr();
+    lcd_home();
+    lcd_led(0);
+}
+
+void DISPLAY_clear(void)
+{
+    lcd_clrscr();
+}
+
+void DISPLAY_home(void)
+{
+    lcd_home();
+}
+
+void DISPLAY_gotoXY(uint8_t x, uint8_t y)
+{
+    lcd_gotoxy(x, y);
+}
+
+void DISPLAY_showString(const char *str)
+{
+    lcd_puts(str);
+}
+
+void DISPLAY_showInteger(int number)
+{
+    char str[10];
+
+    _intToStr(number, str);
+
+    DISPLAY_showString(str);
+}
+
+static void _intToStr(int number, char *str)
+{
+    uint8_t n = 0;
+    char tmp;
+
+    if (number == 0)
+    {
+        str[0] = '0';
+        str[1] = '\0';
+        return;
+    }
+
+    if (number < 0)
+    {
+        str[0] = '-';
+        str++;
+        number *= -1;
+    }
+
+    while (number > 0)
+    {
+        str[n] = number % 10 + 0x30;
+        number /= 10;
+        n++;
+    }
+
+    str[n] = '\0';
+
+    for (uint8_t i = 0; i < n / 2; i++)
+    {
+        tmp = str[i];
+        str[i] = str[n - i - 1];
+        str[n - i - 1] = tmp;
+    }
+}
