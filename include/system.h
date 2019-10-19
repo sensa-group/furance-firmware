@@ -12,8 +12,8 @@
 /*
  * To make KDevelop happy :)
  */
-//#define __AVR_ATmega32U4__
-#define __AVR_ATmega328P__
+#define __AVR_ATmega32U4__
+//#define __AVR_ATmega328P__
 
 #define F_CPU 16000000UL
 

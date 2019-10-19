@@ -15,6 +15,24 @@
 
 void GPIO_init(void)
 {
+	// set to input
+	GPIO_SWITCH_DDR &= ~((1 << GPIO_SWITCH_THERM) | (1 << GPIO_SWITCH_NIVO) | (1 << GPIO_SWITCH_SIGUR) | (1 << GPIO_SWITCH_OPC_1) | (1 << GPIO_SWITCH_OPC_2));
+	// setup timer for debouncing?
+
+	// buzzer
+	GPIO_BUZZER_DDR |= (1 << GPIO_BUZZER_PIN);
+	GPIO_BUZZER_PORT &= ~(1 << GPIO_BUZZER_PIN);
+
+}
+
+void GPIO_buzzerOn(void) 
+{
+	GPIO_BUZZER_PORT |= (1 << GPIO_BUZZER_PIN);
+}
+
+void GPIO_buzzerOff(void) 
+{
+	GPIO_BUZZER_PORT &= ~(1 << GPIO_BUZZER_PIN);
 }
 
 void GPIO_relayOn(uint8_t relay)
