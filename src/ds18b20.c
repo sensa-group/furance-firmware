@@ -11,7 +11,7 @@
 
 #include <avr/io.h>
 
-#include "onewire.h"
+//#include "onewire.h"
 
 void DS18B20_init(void)
 {

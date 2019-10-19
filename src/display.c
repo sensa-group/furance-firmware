@@ -11,7 +11,7 @@
 
 #include <avr/io.h>
 
-#include "lcdpcf8574.h"
+#include "driver/lcdpcf8574.h"
 
 #define _LCD_NOBACKLIGHT 0x00
 #define _LCD_BACKLIGHT   0xFF

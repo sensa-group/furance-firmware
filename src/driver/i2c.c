@@ -7,7 +7,7 @@
  */
 
 #include "system.h"
-#include "i2c.h"
+#include "driver/i2c.h"
 
 #include <avr/io.h>
 

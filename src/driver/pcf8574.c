@@ -7,11 +7,11 @@
  */
 
 #include "system.h"
-#include "pcf8574.h"
+#include "driver/pcf8574.h"
 
 #include <avr/io.h>
 
-#include "i2c.h"
+#include "driver/i2c.h"
 
 static uint8_t g_pinStatus[PCF8574_MAXDEVICES];
 
