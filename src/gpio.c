@@ -25,11 +25,13 @@ void GPIO_init(void)
 
 }
 
-void GPIO_buzzerOn(void) {
+void GPIO_buzzerOn(void) 
+{
 	GPIO_BUZZER_PORT |= (1 << GPIO_BUZZER_PIN);
 }
 
-void GPIO_buzzerOff(void) {
+void GPIO_buzzerOff(void) 
+{
 	GPIO_BUZZER_PORT &= ~(1 << GPIO_BUZZER_PIN);
 }
 
