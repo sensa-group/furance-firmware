@@ -14,24 +14,24 @@
 void UART_init(void)
 {
     uint16_t baudRate = BAUD(BAUD_RATE);
-    UBRR0L = baudRate & 0xFF;
-    UBRR0H = baudRate >> 8;
+    UBRR1L = baudRate & 0xFF;
+    UBRR1H = baudRate >> 8;
 
-    UCSR0B = (1 << RXEN0) | (1 << TXEN0);
+    UCSR1B = (1 << RXEN1) | (1 << TXEN1);
 
-    UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
+    UCSR1C = (1 << UCSZ11) | (1 << UCSZ10);
 }
 
 uint8_t UART_read(void)
 {
-    while (!(UCSR0A & (1 << RXC0)));
-    return UDR0;
+    while (!(UCSR1A & (1 << RXC1)));
+    return UDR1;
 }
 
 void UART_write(uint8_t data)
 {
-    while (!(UCSR0A & (1 << UDRE0)));
-    UDR0 = data;
+    while (!(UCSR1A & (1 << UDRE1)));
+    UDR1 = data;
 }
 
 void UART_writeString(char *str)
