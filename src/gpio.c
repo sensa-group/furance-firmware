@@ -36,7 +36,8 @@ void GPIO_buzzerOff(void)
 	GPIO_BUZZER_PORT &= ~(1 << GPIO_BUZZER_PIN);
 }
 
-uint8_t GPIO_switchRead(uint8_t switch_num) {
+uint8_t GPIO_switchRead(uint8_t switch_num) 
+{
 	// for switch_num just put one of the GPIO_SWITCH_ defines
 	return (GPIO_SWITCH_PORT & (1 << switch_num));   
 }

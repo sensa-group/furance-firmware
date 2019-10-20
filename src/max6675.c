@@ -14,7 +14,8 @@
 
 // library: https://github.com/adafruit/MAX6675-library/blob/master/max6675.cpp
 
-static uint8_t spi_read(void) {
+static uint8_t spi_read(void) 
+{
 	/*
 		int i;
 	  byte d = 0;
@@ -55,7 +56,8 @@ static uint8_t spi_read(void) {
 	return read_data;
 }
 
-static double read_temp(void) {
+static double read_temp(void) 
+{
 
 	/*
 	uint16_t v;
@@ -102,7 +104,8 @@ static double read_temp(void) {
 }
 
 
-void MAX6675_init(void) {
+void MAX6675_init(void) 
+{
 
 	PIN_SCK_DDR |= (1 << PIN_SCK);			// output
 	PIN_CS_DDR |= (1 << PIN_CS);			// output
@@ -113,6 +116,7 @@ void MAX6675_init(void) {
 	PIN_CS_PORT |= (1 << PIN_CS);			// high
 }
 
-double MAX6675_read_temperature(void) {
+double MAX6675_read_temperature(void) 
+{
 	return read_temp() * 9.0/5.0 + 32;
 }
