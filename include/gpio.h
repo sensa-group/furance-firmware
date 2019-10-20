@@ -37,7 +37,7 @@
 
 void GPIO_init(void);
 
-void GPIO_switch_read(uint8_t switch_num);
+uint8_t GPIO_switchRead(uint8_t switch_num);
 
 void GPIO_relayOn(uint8_t relay);
 void GPIO_relayOff(uint8_t relay);
