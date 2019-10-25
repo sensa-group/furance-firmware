@@ -14,6 +14,7 @@
 #include "driver/uart.h"
 #include "driver/pwm.h"
 #include "driver/pcf8574.h"
+#include "display.h"
 #include "gpio.h"
 
 int main(void)
@@ -91,6 +92,9 @@ int main(void)
     */
 
     UART_init();
+
+    DISPLAY_init();
+    DISPLAY_showString("ZI JE CAR");
 
     while (1);
 
