@@ -6,6 +6,7 @@
  * 
  */
 
+/*
 #include "system.h"
 #include "display.h"
 
@@ -98,3 +99,4 @@ static void _intToStr(int number, char *str)
         str[n - i - 1] = tmp;
     }
 }
+*/

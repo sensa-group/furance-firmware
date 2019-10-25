@@ -1,25 +1,37 @@
 /*
- * File name:       pcf8574.h
- * Description:     Driver for PCF8574 I2C GPIO expander
- * Author:          Milos Zivlak <milos.zivlak@sensa-group.net>
- * Date:            2019-10-13
- * 
- */
+pcf8574 lib 0x02
+copyright (c) Davide Gironi, 2012
+Released under GPLv3.
+Please refer to LICENSE file for licensing information.
+*/
 
-#ifndef _PCF8574_H_
-#define _PCF8574_H_
 
-#include <stdint.h>
+#ifndef PCF8574_H_
+#define PCF8574_H_
 
-#define PCF8574_ADDRBASE            0x20
+#define PCF8574_ADDRBASE (0x20) //device base address
 
-#define PCF8574_MAXDEVICES          2
-#define PCF8574_MAXPINS             8
+#define PCF8574_I2CINIT 1 //init i2c
 
-void PCF8574_init(void);
-void PCF8574_setOutput(uint8_t deviceId, uint8_t data);
-void PCF8574_setOutputPin(uint8_t deviceId, uint8_t pin, uint8_t data);
-uint8_t PCF8574_getInput(uint8_t deviceId);
-uint8_t PCF8574_getInputPin(uint8_t deviceId, uint8_t pin);
+#define PCF8574_MAXDEVICES 8 //max devices, depends on address (3 bit)
+#define PCF8574_MAXPINS 8 //max pin per device
 
-#endif // _PCF8574_H_
+//settings
+#define PCF8574_I2CFLEURYPATH "driver/i2cmaster.h" //define the path to i2c fleury lib
+
+//pin status
+volatile uint8_t pcf8574_pinstatus[PCF8574_MAXDEVICES];
+
+
+//functions
+void pcf8574_init();
+extern int8_t pcf8574_getoutput(uint8_t deviceid);
+extern int8_t pcf8574_getoutputpin(uint8_t deviceid, uint8_t pin);
+extern int8_t pcf8574_setoutput(uint8_t deviceid, uint8_t data);
+extern int8_t pcf8574_setoutputpins(uint8_t deviceid, uint8_t pinstart, uint8_t pinlength, int8_t data);
+extern int8_t pcf8574_setoutputpin(uint8_t deviceid, uint8_t pin, uint8_t data);
+extern int8_t pcf8574_setoutputpinhigh(uint8_t deviceid, uint8_t pin);
+extern int8_t pcf8574_setoutputpinlow(uint8_t deviceid, uint8_t pin);
+extern int8_t pcf8574_getinput(uint8_t deviceid);
+extern int8_t pcf8574_getinputpin(uint8_t deviceid, uint8_t pin);
+#endif

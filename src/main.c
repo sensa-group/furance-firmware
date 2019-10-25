@@ -11,7 +11,10 @@
 #include <avr/io.h>
 #include <util/delay.h>
 
+#include "driver/uart.h"
 #include "driver/pwm.h"
+#include "driver/pcf8574.h"
+#include "gpio.h"
 
 int main(void)
 {
@@ -41,6 +44,7 @@ int main(void)
 
     while (1);
 
+
     while (1)
     {
         PWM0_setDutyCycle(0);
@@ -50,6 +54,75 @@ int main(void)
         PWM0_setDutyCycle(0xFF / 2);
         _delay_ms(1000);
         PWM0_setDutyCycle(0xFF);
+        _delay_ms(1000);
+    }
+    */
+
+    /*
+    DDRB |= (1 << PB7);
+
+    while (1)
+    {
+        PORTB ^= (1 << PB7);
+        _delay_ms(10);
+    }
+    */
+
+    // 10 - 20 (maksimum je 1, od 10 do 20 se vidi mala razlika, posle toga je sve isto)
+    //PWM1_init();
+    //PWM1_setFrequency(10);
+
+    //DDRB &= ~(1 << PB7);
+
+    //while (1);
+
+    /*
+     * 0x3C - Relays
+     * 0x38 - Display
+     */
+
+    /*
+    DDRB |= (1 << PB7);
+    while (1)
+    {
+        PORTB ^= (1 << PB7);
+        _delay_ms(1000);
+    }
+    */
+
+    UART_init();
+
+    while (1);
+
+    //while (1);
+
+    //UART_writeString("UART RADI\n");
+
+    /*
+    I2C_init();
+    PCF8574_init();
+    GPIO_init();
+
+    while (1)
+    {
+        GPIO_relayOn(GPIO_RELAY_HEATER);
+        //UART_writeString("ON\n");
+        _delay_ms(1000);
+        GPIO_relayOff(GPIO_RELAY_HEATER);
+        //UART_writeString("OFF\n");
+        _delay_ms(1000);
+    }
+    */
+
+    /*
+    pcf8574_init();
+    GPIO_init();
+
+    while (1)
+    {
+        GPIO_relayOn(GPIO_RELAY_HEATER);
+        _delay_ms(1000);
+        GPIO_relayOff(GPIO_RELAY_HEATER);
         _delay_ms(1000);
     }
     */

@@ -14,8 +14,8 @@
 void UART_init(void)
 {
     uint16_t baudRate = BAUD(BAUD_RATE);
-    UBRR1L = baudRate & 0xFF;
-    UBRR1H = baudRate >> 8;
+    UBRR1H = (uint8_t)(baudRate >> 8);
+    UBRR1L = (uint8_t)(baudRate & 0xFF);
 
     UCSR1B = (1 << RXEN1) | (1 << TXEN1);
 

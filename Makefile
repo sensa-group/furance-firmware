@@ -8,6 +8,7 @@ PROJECTNAME := pecka
 CC = avr-gcc
 #CCFLAGS = -mmcu=atmega328p
 CCFLAGS = -mmcu=atmega32u4
+#CCFLAGS = -mmcu=atmega2560
 MKDIR_P = mkdir -p
 
 LIBS =

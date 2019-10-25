@@ -14,4 +14,7 @@
 void PWM0_init(void);
 void PWM0_setDutyCycle(uint8_t dutyCycle);
 
+void PWM1_init(void);
+void PWM1_setFrequency(uint32_t frequency);
+
 #endif // _PWM_H_
