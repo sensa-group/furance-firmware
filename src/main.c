@@ -95,6 +95,12 @@ int main(void)
 
     DISPLAY_init();
     DISPLAY_showString("ZI JE CAR");
+    DISPLAY_gotoXY(0, 1);
+    DISPLAY_showString("SENSA");
+    DISPLAY_gotoXY(0, 2);
+    DISPLAY_showString("http://sensa-group.n");
+    DISPLAY_gotoXY(0, 3);
+    DISPLAY_showString(":D");
 
     while (1);
 

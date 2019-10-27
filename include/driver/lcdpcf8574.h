@@ -20,7 +20,7 @@ References:
 
 #define LCD_PCF8574_INIT 1 //init pcf8574
 
-#define LCD_PCF8574_DEVICEID 0 //device id, addr = pcf8574 base addr + LCD_PCF8574_DEVICEID
+#define LCD_PCF8574_DEVICEID 7 //device id, addr = pcf8574 base addr + LCD_PCF8574_DEVICEID
 
 
 /** 
@@ -34,7 +34,7 @@ References:
 #define LCD_START_LINE2  0x40     /**< DDRAM address of first char of line 2 */
 #define LCD_START_LINE3  0x14     /**< DDRAM address of first char of line 3 */
 #define LCD_START_LINE4  0x54     /**< DDRAM address of first char of line 4 */
-#define LCD_WRAP_LINES      1     /**< 0: no wrap, 1: wrap at end of visibile line */
+#define LCD_WRAP_LINES      0     /**< 0: no wrap, 1: wrap at end of visibile line */
 
 
 
