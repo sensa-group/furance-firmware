@@ -18,5 +18,6 @@ uint8_t UART_read(void);
 void UART_write(uint8_t data);
 void UART_writeString(char *str);
 void UART_writeBuffer(uint8_t *buff, uint16_t len);
+void UART_writeIntegerString(int value);
 
 #endif // _UART_H_

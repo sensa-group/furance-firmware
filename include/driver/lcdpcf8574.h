@@ -20,7 +20,7 @@ References:
 
 #define LCD_PCF8574_INIT 1 //init pcf8574
 
-#define LCD_PCF8574_DEVICEID 7 //device id, addr = pcf8574 base addr + LCD_PCF8574_DEVICEID
+#define LCD_PCF8574_DEVICEID 0 //device id, addr = pcf8574 base addr + LCD_PCF8574_DEVICEID
 
 
 /** 

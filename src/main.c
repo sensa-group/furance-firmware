@@ -14,8 +14,11 @@
 #include "driver/uart.h"
 #include "driver/pwm.h"
 #include "driver/pcf8574.h"
+#include "driver/ds18b20.h"
+//#include "driver/ds18b20o.h"
 #include "display.h"
 #include "gpio.h"
+#include "menu.h"
 
 int main(void)
 {
@@ -91,8 +94,44 @@ int main(void)
     }
     */
 
+    /*
+    DDRE |= (1 << PE6);
+
+    while (1)
+    {
+        PORTE |= (1 << PE6);
+        _delay_ms(1);
+        PORTE &= ~(1 << PE6);
+        _delay_ms(1);
+    }
+
+    while (1);
+    */
+
     UART_init();
 
+    //DS18B20O_init();
+
+    while (1)
+    {
+        //int tmp = (int)DS18B20O_readT1();
+        int tmp = (int)ds18b20_gettemp();
+        UART_writeIntegerString(tmp);
+        UART_writeString("\n");
+        //UART_write(tmp);
+    }
+
+    /*
+    while (1)
+    {
+        int tmp = (int)ds18b20_gettemp();
+        //UART_writeIntegerString(tmp);
+        UART_write(tmp);
+        _delay_ms(500);
+    }
+    */
+
+    /*
     DISPLAY_init();
     DISPLAY_showString("ZI JE CAR");
     DISPLAY_gotoXY(0, 1);
@@ -101,6 +140,51 @@ int main(void)
     DISPLAY_showString("http://sensa-group.n");
     DISPLAY_gotoXY(0, 3);
     DISPLAY_showString(":D");
+
+    MENU_init();
+    */
+
+    while (1);
+
+    /*
+    ONEWIRE_init();
+
+    uint8_t addr[8];
+
+    UART_writeString("START\n");
+    while (ONEWIRE_search(addr))
+    {
+        UART_writeString("USAO\n");
+        UART_writeBuffer(addr, 8);
+    }
+    UART_writeString("KRAJ\n");
+    */
+
+    /*
+    pcf8574_init();
+    GPIO_init();
+
+    while (1)
+    {
+        GPIO_relayOn(GPIO_RELAY_HEATER);
+        _delay_ms(1000);
+        GPIO_relayOff(GPIO_RELAY_HEATER);
+        _delay_ms(1000);
+    }
+    */
+
+    /*
+    DISPLAY_init();
+    DISPLAY_showString("ZI JE CAR");
+    DISPLAY_gotoXY(0, 1);
+    DISPLAY_showString("SENSA");
+    DISPLAY_gotoXY(0, 2);
+    DISPLAY_showString("http://sensa-group.n");
+    DISPLAY_gotoXY(0, 3);
+    DISPLAY_showString(":D");
+    */
+
+    //
 
     while (1);
 

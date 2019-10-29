@@ -15,6 +15,12 @@
 static uint32_t _frequency;
 static uint32_t _tick;
 
+static uint32_t _frequency2;
+static uint32_t _tick2;
+
+void _isr1(void);
+void _isr2(void);
+
 void PWM0_init(void)
 {
     cli();
@@ -78,7 +84,38 @@ void PWM1_setFrequency(uint32_t frequency)
     sei();
 }
 
+void PWM2_init(void)
+{
+    cli();
+
+    DDRD |= (1 << PD4);
+
+    _frequency2 = 0;
+    _tick2 = 0;
+
+    sei();
+}
+
+void PWM2_setFrequency(uint32_t frequency)
+{
+    cli();
+
+    _frequency2 = frequency;
+    _tick2 = 0;
+    TCNT1 = 0;
+
+    PORTD &= ~(1 << PD4);
+
+    sei();
+}
+
 ISR(TIMER1_COMPA_vect)
+{
+    _isr1();
+    _isr2();
+}
+
+void _isr1(void)
 {
     if (_frequency == 0)
     {
@@ -90,5 +127,20 @@ ISR(TIMER1_COMPA_vect)
     {
         PORTB ^= (1 << PB7);
         _tick = 0;
+    }
+}
+
+void _isr2(void)
+{
+    if (_frequency2 == 0)
+    {
+        return;
+    }
+
+    _tick2++;
+    if (_tick2 > _frequency2)
+    {
+        PORTD ^= (1 << PD4);
+        _tick2 = 0;
     }
 }

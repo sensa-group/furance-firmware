@@ -11,6 +11,8 @@
 
 #include <avr/io.h>
 
+static void _intToStr(int number, char *str);
+
 void UART_init(void)
 {
     uint16_t baudRate = BAUD(BAUD_RATE);
@@ -48,5 +50,50 @@ void UART_writeBuffer(uint8_t *buff, uint16_t len)
     for (uint16_t i = 0; i < len; i++)
     {
         UART_write(buff[i]);
+    }
+}
+
+void UART_writeIntegerString(int value)
+{
+    char str[10];
+
+    _intToStr(value, str);
+
+    UART_writeString(str);
+}
+
+static void _intToStr(int number, char *str)
+{
+    uint8_t n = 0;
+    char tmp;
+
+    if (number == 0)
+    {
+        str[0] = '0';
+        str[1] = '\0';
+        return;
+    }
+
+    if (number < 0)
+    {
+        str[0] = '-';
+        str++;
+        number *= -1;
+    }
+
+    while (number > 0)
+    {
+        str[n] = number % 10 + 0x30;
+        number /= 10;
+        n++;
+    }
+
+    str[n] = '\0';
+
+    for (uint8_t i = 0; i < n / 2; i++)
+    {
+        tmp = str[i];
+        str[i] = str[n - i - 1];
+        str[n - i - 1] = tmp;
     }
 }
