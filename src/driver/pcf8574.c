@@ -5,6 +5,7 @@ Released under GPLv3.
 Please refer to LICENSE file for licensing information.
 */
 
+#include "system.h"
 
 #include <avr/io.h>
 #include <avr/interrupt.h>

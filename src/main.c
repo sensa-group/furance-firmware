@@ -14,8 +14,7 @@
 #include "driver/uart.h"
 #include "driver/pwm.h"
 #include "driver/pcf8574.h"
-#include "driver/ds18b20.h"
-//#include "driver/ds18b20o.h"
+#include "driver/max6675.h"
 #include "display.h"
 #include "gpio.h"
 #include "menu.h"
@@ -109,16 +108,17 @@ int main(void)
     */
 
     UART_init();
-    UART_writeString("RADI\n");
 
     //DS18B20O_init();
 
+    MAX6675_init();
     while (1)
     {
         //int tmp = (int)DS18B20O_readT1();
-        int tmp = (int)ds18b20_gettemp();
+        int tmp = (int)MAX6675_readCelsius();
         UART_writeIntegerString(tmp);
         UART_writeString("\n");
+        _delay_ms(500);
         //UART_write(tmp);
     }
 
