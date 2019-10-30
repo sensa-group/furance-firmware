@@ -38,7 +38,7 @@ void GPIO_buzzerOff(void)
 uint8_t GPIO_switchRead(uint8_t switch_num) 
 {
     // for switch_num just put one of the GPIO_SWITCH_ defines
-    return (GPIO_SWITCH_PORT & (1 << switch_num));   
+    return !((GPIO_SWITCH_PORT >> switch_num) & 0x01);   
 }
 
 void GPIO_relayOn(uint8_t relay)

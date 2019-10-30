@@ -26,6 +26,7 @@ void PWM0_init(void)
     cli();
 
     DDRC |= (1 << PC6);
+    PORTC &= ~(1 << PC6);
 
     TCNT3 = 0;
     OCR3A = 0;

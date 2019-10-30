@@ -14,7 +14,7 @@
 
 // switches	
 #define GPIO_SWITCH_DDR                 DDRF
-#define GPIO_SWITCH_PORT                PORTF
+#define GPIO_SWITCH_PORT                PINF
 #define GPIO_SWITCH_THERM               6
 #define GPIO_SWITCH_NIVO                5
 #define GPIO_SWITCH_SIGUR               4
