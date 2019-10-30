@@ -109,6 +109,7 @@ int main(void)
     */
 
     UART_init();
+    UART_writeString("RADI\n");
 
     //DS18B20O_init();
 

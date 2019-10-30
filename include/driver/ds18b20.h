@@ -19,10 +19,10 @@ References:
 #include <avr/io.h>
 
 //setup connection
-#define DS18B20_PORT PORTB
-#define DS18B20_DDR DDRB
-#define DS18B20_PIN PINB
-#define DS18B20_DQ PB0
+#define DS18B20_PORT PORTE
+#define DS18B20_DDR DDRE
+#define DS18B20_PIN PINE
+#define DS18B20_DQ PE6
 
 //commands
 #define DS18B20_CMD_CONVERTTEMP 0x44
