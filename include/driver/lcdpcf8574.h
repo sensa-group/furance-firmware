@@ -118,7 +118,7 @@ References:
                     \b LCD_DISP_ON_CURSOR_BLINK display on, cursor on flashing             
  @return  none
 */
-extern void lcd_init(uint8_t dispAttr);
+extern uint8_t lcd_init(uint8_t dispAttr);
 
 
 /**
@@ -126,7 +126,7 @@ extern void lcd_init(uint8_t dispAttr);
  @param    void                                        
  @return   none
 */
-extern void lcd_clrscr(void);
+extern uint8_t lcd_clrscr(void);
 
 
 /**
@@ -134,7 +134,7 @@ extern void lcd_clrscr(void);
  @param    void                                        
  @return   none
 */
-extern void lcd_home(void);
+extern uint8_t lcd_home(void);
 
 
 /**
@@ -144,7 +144,7 @@ extern void lcd_home(void);
  @param    y vertical position\n   (0: first line)
  @return   none
 */
-extern void lcd_gotoxy(uint8_t x, uint8_t y);
+extern uint8_t lcd_gotoxy(uint8_t x, uint8_t y);
 
 
 /**
@@ -152,7 +152,7 @@ extern void lcd_gotoxy(uint8_t x, uint8_t y);
  @param    void
  @return   none
 */
-extern void lcd_led(uint8_t onoff);
+extern uint8_t lcd_led(uint8_t onoff);
 
 
 /**
@@ -160,7 +160,7 @@ extern void lcd_led(uint8_t onoff);
  @param    c character to be displayed                                       
  @return   none
 */
-extern void lcd_putc(char c);
+extern uint8_t lcd_putc(char c);
 
 
 /**
@@ -168,7 +168,7 @@ extern void lcd_putc(char c);
  @param    s string to be displayed                                        
  @return   none
 */
-extern void lcd_puts(const char *s);
+extern uint8_t lcd_puts(const char *s);
 
 
 /**
@@ -177,7 +177,7 @@ extern void lcd_puts(const char *s);
  @return   none
  @see      lcd_puts_P
 */
-extern void lcd_puts_p(const char *progmem_s);
+extern uint8_t lcd_puts_p(const char *progmem_s);
 
 
 /**
@@ -185,7 +185,7 @@ extern void lcd_puts_p(const char *progmem_s);
  @param    cmd instruction to send to LCD controller, see HD44780 data sheet
  @return   none
 */
-extern void lcd_command(uint8_t cmd);
+extern uint8_t lcd_command(uint8_t cmd);
 
 
 /**

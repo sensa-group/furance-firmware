@@ -12,10 +12,10 @@
 #include <stdint.h>
 
 void DISPLAY_init(void);
-void DISPLAY_clear(void);
-void DISPLAY_home(void);
-void DISPLAY_gotoXY(uint8_t x, uint8_t y);
-void DISPLAY_showString(const char *str);
-void DISPLAY_showInteger(int number);
+uint8_t DISPLAY_clear(void);
+uint8_t DISPLAY_home(void);
+uint8_t DISPLAY_gotoXY(uint8_t x, uint8_t y);
+uint8_t DISPLAY_showString(const char *str);
+uint8_t DISPLAY_showInteger(int number);
 
 #endif // _DISPLAY_H_

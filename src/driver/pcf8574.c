@@ -62,8 +62,16 @@ int8_t pcf8574_getoutputpin(uint8_t deviceid, uint8_t pin) {
 int8_t pcf8574_setoutput(uint8_t deviceid, uint8_t data) {
 	if((deviceid >= 0 && deviceid < PCF8574_MAXDEVICES)) {
 		pcf8574_pinstatus[deviceid] = data;
-		i2c_start(((PCF8574_ADDRBASE+deviceid)<<1) | I2C_WRITE);
-		i2c_write(data);
+		if (i2c_start(((PCF8574_ADDRBASE+deviceid)<<1) | I2C_WRITE) != 0)
+        {
+            i2c_stop();
+            return -1;
+        }
+		if (i2c_write(data) != 0)
+        {
+            i2c_stop();
+            return -1;
+        }
 		i2c_stop();
 		return 0;
 	}
@@ -108,8 +116,16 @@ int8_t pcf8574_setoutputpin(uint8_t deviceid, uint8_t pin, uint8_t data) {
 	    b = (data != 0) ? (b | (1 << pin)) : (b & ~(1 << pin));
 	    pcf8574_pinstatus[deviceid] = b;
 	    //update device
-		i2c_start(((PCF8574_ADDRBASE+deviceid)<<1) | I2C_WRITE);
-		i2c_write(b);
+		if (i2c_start(((PCF8574_ADDRBASE+deviceid)<<1) | I2C_WRITE) != 0)
+        {
+            i2c_stop();
+            return -1;
+        }
+		if (i2c_write(b) != 0)
+        {
+            i2c_stop();
+            return -1;
+        }
 		i2c_stop();
 		return 0;
 	}

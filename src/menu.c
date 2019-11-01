@@ -19,22 +19,6 @@
 
 typedef void (*ptrStateFunction)(void);
 
-void SM_showMenuItem(const char *str1, const char *str2)
-{
-}
-
-void SM_showMenuOption(uint16_t tmp)
-{
-}
-
-void SM_startStop()
-{
-}
-
-void SM_snailStartStop()
-{
-}
-
 /*
  * States
  */
@@ -140,6 +124,14 @@ typedef struct
     uint16_t valueMax;
     ptrStateFunction callback;
 } state_t;
+
+void SM_startStop()
+{
+}
+
+void SM_snailStartStop()
+{
+}
 
 const char *g_text[] = {
     "",                                     // _STATE_NO_MENU
@@ -318,6 +310,9 @@ static void _handleClick(void);
 static void _handleNext(void);
 static void _handlePrev(void);
 
+static void _showMenuItem(const char *str1, const char *str2, const char *str3);
+static void _showMenuOption(uint16_t tmp);
+
 void MENU_init(void)
 {
     cli();
@@ -329,7 +324,8 @@ void MENU_init(void)
     //SYSTEM_IN_PULLDOWN(SYSTEM_PORTC, 5);
     //SYSTEM_IN_PULLDOWN(SYSTEM_PORTC, 6);
     PCICR |= (1 << PCIE0);
-    PCMSK0 |= (1 << PCINT4) | (1 << PCINT5) | (1 << PCINT6);
+    //PCMSK0 |= (1 << PCINT4) | (1 << PCINT5) | (1 << PCINT6);
+    PCMSK0 |= (1 << PCINT4) | (1 << PCINT6);
     sei();
 
     g_currentState = _STATE_START_STOP;
@@ -337,7 +333,21 @@ void MENU_init(void)
     g_encBLastState = (PINB >> PB5) & 0x01;
     g_btnLastState = (PINB >> PB6) & 0x01;
 
-    SM_showMenuItem(g_text[g_currentState], g_text[g_states[g_currentState].nextStateId]);
+    DISPLAY_gotoXY(0, 0);
+    DISPLAY_showString("        |");
+    DISPLAY_gotoXY(0, 1);
+    DISPLAY_showString("        |");
+    DISPLAY_gotoXY(0, 2);
+    DISPLAY_showString("        |");
+    DISPLAY_gotoXY(0, 3);
+    DISPLAY_showString("16.10.19|");
+
+    DISPLAY_gotoXY(12, 0);
+    DISPLAY_showString("MENI:");
+    DISPLAY_gotoXY(9, 2);
+    DISPLAY_showString(">");
+
+    _showMenuItem(g_text[g_currentState], g_text[g_states[g_currentState].nextStateId], 0);
 }
 
 static void _handleClick(void)
@@ -348,33 +358,46 @@ static void _handleClick(void)
         g_currentState = g_states[g_currentState].clickStateId;
         if (g_states[g_currentState].type == _TYPE_OPTION)
         {
-            SM_showMenuItem(g_text[g_currentState], 0);
+            _showMenuItem(g_text[g_currentState], 0, 0);
             g_optionValue = EEPROM_readWord(g_states[g_currentState].eepromRegister);
-            SM_showMenuOption(g_optionValue);
+            _showMenuOption(g_optionValue);
         }
         else
         {
+            const char *str1 = g_text[g_currentState];
+            const char *str2 = 0;
+            const char *str3 = 0;
+
             if (g_currentState != g_states[g_currentState].nextStateId && g_states[g_currentState].nextStateId != 0)
             {
-                SM_showMenuItem(g_text[g_currentState], g_text[g_states[g_currentState].nextStateId]);
+                str2 = g_text[g_states[g_currentState].nextStateId];
             }
-            else
+            
+            if (g_currentState != g_states[g_currentState].prevStateId && g_states[g_currentState].prevStateId != 0)
             {
-                SM_showMenuItem(g_text[g_currentState], 0);
+                str3 = g_text[g_states[g_currentState].prevStateId];
             }
+            _showMenuItem(str1, str2, str3);
         }
         break;
     case _TYPE_OPTION:
         EEPROM_writeWord(g_states[g_currentState].eepromRegister, g_optionValue);
         g_currentState = g_states[g_currentState].clickStateId;
+
+        const char *str1 = g_text[g_currentState];
+        const char *str2 = 0;
+        const char *str3 = 0;
+
         if (g_currentState != g_states[g_currentState].nextStateId && g_states[g_currentState].nextStateId != 0)
         {
-            SM_showMenuItem(g_text[g_currentState], g_text[g_states[g_currentState].nextStateId]);
+            str2 = g_text[g_states[g_currentState].nextStateId];
         }
-        else
+            
+        if (g_currentState != g_states[g_currentState].prevStateId && g_states[g_currentState].prevStateId != 0)
         {
-            SM_showMenuItem(g_text[g_currentState], 0);
+            str3 = g_text[g_states[g_currentState].prevStateId];
         }
+        _showMenuItem(str1, str2, str3);
         break;
     case _TYPE_ACTION:
         if (g_states[g_currentState].callback)
@@ -392,14 +415,21 @@ static void _handleNext(void)
         if (g_currentState != g_states[g_currentState].nextStateId)
         {
             g_currentState = g_states[g_currentState].nextStateId;
+
+            const char *str1 = g_text[g_currentState];
+            const char *str2 = 0;
+            const char *str3 = 0;
+
             if (g_currentState != g_states[g_currentState].nextStateId && g_states[g_currentState].nextStateId != 0)
             {
-                SM_showMenuItem(g_text[g_currentState], g_text[g_states[g_currentState].nextStateId]);
+                str2 = g_text[g_states[g_currentState].nextStateId];
             }
-            else
+            
+            if (g_currentState != g_states[g_currentState].prevStateId && g_states[g_currentState].prevStateId != 0)
             {
-                SM_showMenuItem(g_text[g_currentState], 0);
+                str3 = g_text[g_states[g_currentState].prevStateId];
             }
+            _showMenuItem(str1, str2, str3);
         }
     }
     else
@@ -407,7 +437,7 @@ static void _handleNext(void)
         if (g_optionValue < g_states[g_currentState].valueMax)
         {
             g_optionValue++;
-            SM_showMenuOption(g_optionValue);
+            _showMenuOption(g_optionValue);
         }
     }
 }
@@ -419,14 +449,21 @@ static void _handlePrev(void)
         if (g_currentState != g_states[g_currentState].prevStateId)
         {
             g_currentState = g_states[g_currentState].prevStateId;
+
+            const char *str1 = g_text[g_currentState];
+            const char *str2 = 0;
+            const char *str3 = 0;
+
             if (g_currentState != g_states[g_currentState].nextStateId && g_states[g_currentState].nextStateId != 0)
             {
-                SM_showMenuItem(g_text[g_currentState], g_text[g_states[g_currentState].nextStateId]);
+                str2 = g_text[g_states[g_currentState].nextStateId];
             }
-            else
+            
+            if (g_currentState != g_states[g_currentState].prevStateId && g_states[g_currentState].prevStateId != 0)
             {
-                SM_showMenuItem(g_text[g_currentState], 0);
+                str3 = g_text[g_states[g_currentState].prevStateId];
             }
+            _showMenuItem(str1, str2, str3);
         }
     }
     else
@@ -434,9 +471,35 @@ static void _handlePrev(void)
         if (g_optionValue > g_states[g_currentState].valueMin)
         {
             g_optionValue--;
-            SM_showMenuOption(g_optionValue);
+            _showMenuOption(g_optionValue);
         }
     }
+}
+
+static void _showMenuItem(const char *str1, const char *str2, const char *str3)
+{
+    DISPLAY_gotoXY(10, 1);
+    DISPLAY_showString("          ");
+    if (str3)
+    {
+        DISPLAY_gotoXY(10, 1);
+        DISPLAY_showString(str3);
+    }
+    DISPLAY_gotoXY(10, 2);
+    DISPLAY_showString("          ");
+    DISPLAY_gotoXY(10, 2);
+    DISPLAY_showString(str1);
+    DISPLAY_gotoXY(10, 3);
+    DISPLAY_showString("          ");
+    if (str2)
+    {
+        DISPLAY_gotoXY(10, 3);
+        DISPLAY_showString(str2);
+    }
+}
+
+static void _showMenuOption(uint16_t tmp)
+{
 }
 
 ISR(PCINT0_vect)
@@ -444,7 +507,6 @@ ISR(PCINT0_vect)
     //uint8_t intFlags = PORTC.INTFLAGS;
     //PORTC.INTFLAGS = intFlags;
 
-    //_delay_ms(1);
     uint8_t encACurrentState = (PINB >> PB4) & 0x01;
     uint8_t encBCurrentState = (PINB >> PB5) & 0x01;
     uint8_t btnCurrentState = (PINB >> PB6) & 0x01;
@@ -462,15 +524,15 @@ ISR(PCINT0_vect)
         _handleClick();
     }
 
-    if (encACurrentState != g_encALastState)
+    if (encACurrentState != g_encALastState && encACurrentState == 0)
     {
         if (encACurrentState != encBCurrentState)
         {
-            side = 1;
+            side = -1;
         }
         else
         {
-            side = -1;
+            side = 1;
         }
     }
 

@@ -34,33 +34,33 @@ void DISPLAY_init(void)
     lcd_led(0);
 }
 
-void DISPLAY_clear(void)
+uint8_t DISPLAY_clear(void)
 {
-    lcd_clrscr();
+    return lcd_clrscr();
 }
 
-void DISPLAY_home(void)
+uint8_t DISPLAY_home(void)
 {
-    lcd_home();
+    return lcd_home();
 }
 
-void DISPLAY_gotoXY(uint8_t x, uint8_t y)
+uint8_t DISPLAY_gotoXY(uint8_t x, uint8_t y)
 {
-    lcd_gotoxy(x, y);
+    return lcd_gotoxy(x, y);
 }
 
-void DISPLAY_showString(const char *str)
+uint8_t DISPLAY_showString(const char *str)
 {
-    lcd_puts(str);
+    return lcd_puts(str);
 }
 
-void DISPLAY_showInteger(int number)
+uint8_t DISPLAY_showInteger(int number)
 {
     char str[10];
 
     _intToStr(number, str);
 
-    DISPLAY_showString(str);
+    return DISPLAY_showString(str);
 }
 
 static void _intToStr(int number, char *str)

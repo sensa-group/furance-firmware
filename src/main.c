@@ -17,6 +17,7 @@
 #include "driver/max6675.h"
 #include "driver/hx711.h"
 #include "driver/adc.h"
+#include "driver/ds18b20.h"
 #include "display.h"
 #include "gpio.h"
 #include "menu.h"
@@ -111,18 +112,22 @@ int main(void)
 
     UART_init();
 
-    //pcf8574_init();
+    pcf8574_init();
 
+    /*
     ADC_init();
     _delay_ms(200);
 
     while (1)
     {
+        // 1023 -> ERROR
+        // 700 - 1000 -> NORMAL
         uint16_t tmp = ADC_read(0b111);
         UART_writeIntegerString(tmp);
         UART_writeString("\n");
         _delay_ms(100);
     }
+    */
 
     /*
     MAX6675_init();
@@ -140,14 +145,18 @@ int main(void)
     /*
     while (1)
     {
+        // ERROR -> 0.0
         int tmp = (int)ds18b20_gettemp();
-        //UART_writeIntegerString(tmp);
-        UART_write(tmp);
+        UART_writeIntegerString(tmp);
+        UART_writeString("\n");
+        //UART_write(tmp);
         _delay_ms(500);
     }
     */
 
     DISPLAY_init();
+
+    /*
     DISPLAY_showString("ZI JE CAR");
     DISPLAY_gotoXY(0, 1);
     DISPLAY_showString("SENSA");
@@ -155,8 +164,56 @@ int main(void)
     DISPLAY_showString("http://sensa-group.n");
     DISPLAY_gotoXY(0, 3);
     DISPLAY_showString(":D");
+    */
 
     MENU_init();
+
+    /*
+    uint8_t g_encALastState = (PINB >> PB4) & 0x01;
+    uint8_t g_encBLastState = (PINB >> PB5) & 0x01;
+    uint8_t g_btnLastState = (PINB >> PB6) & 0x01;
+
+    while (1)
+    {
+        uint8_t encACurrentState = (PINB >> PB4) & 0x01;
+        uint8_t encBCurrentState = (PINB >> PB5) & 0x01;
+        uint8_t btnCurrentState = (PINB >> PB6) & 0x01;
+
+        if (encACurrentState == g_encALastState && encBCurrentState == g_encBLastState && btnCurrentState == g_btnLastState)
+        {
+            continue;
+        }
+
+        int8_t side = 0;
+
+        if (btnCurrentState && !g_btnLastState)
+        {
+            UART_writeString("CLICK\n");
+        }
+
+        if (encACurrentState != g_encALastState && encACurrentState == 0)
+        {
+            if (encACurrentState != encBCurrentState)
+            {
+                side = -1;
+            }
+            else
+            {
+                side = 1;
+            }
+        }
+
+        if (side > 0)
+        {
+            UART_writeString("NEXT\n");
+        }
+        else if (side < 0)
+        {
+            UART_writeString("PREV\n");
+        }
+        _delay_ms(1);
+    }
+    */
 
     while (1);
 
