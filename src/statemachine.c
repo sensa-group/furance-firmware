@@ -68,7 +68,7 @@ static uint8_t _SM_stateSnail(void);
 
 static state_t g_states[] = {
 //    Current state         Success state           Repeate state           Error state             Critical state          Callback
-    { _STATE_STOPPED,       _STATE_STARTING,        _STATE_STOPPED,         _STATE_STOPPED,         _STATE_STOPPED,         _SM_stateStopped },
+    { _STATE_STOPPED,       _STATE_STARTING,        _STATE_STOPPED,         _STATE_SNAIL,           _STATE_STOPPED,         _SM_stateStopped },
     { _STATE_STARTING,      _STATE_STABILISATION,   _STATE_STARTING,        _STATE_STOPPING,        _STATE_STOPPING,        _SM_stateStarting },
     { _STATE_STABILISATION, _STATE_RUNNING,         _STATE_STABILISATION,   _STATE_STOPPING,        _STATE_STOPPING,        _SM_stateStabilisation },
     { _STATE_RUNNING,       _STATE_STOPPING,        _STATE_RUNNING,         _STATE_STOPPING,        _STATE_STOPPING,        _SM_stateRunning },
@@ -129,10 +129,35 @@ void SM_init(void)
 
     if (EEPROM_readWord(EEPROM_ADDR_SYSTEM_RUNNING))
     {
+        uint16_t minTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_MIN);
+        uint16_t maxTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_MAX);
+        uint16_t criticalTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
+        uint16_t startTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
+        uint16_t flameMin = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
+        uint16_t flameMax = EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_MAX);
+
+        double currentTemp = ds18b20_gettemp();
+        uint16_t flame = ADC_read(0b111);
+        flame = (uint16_t)SYSTEM_MAP(flame, 1023.0, 100.0, 0.0, 100.0);
+
+        if (currentTemp > flameMin)
+        {
+            if (currentTemp > maxTemp)
+            {
+                g_currentState = _STATE_STOPPING;
+            }
+            else
+            {
+                g_currentState = _STATE_STABILISATION;
+            }
+        }
+        else
+        {
+            g_currentState = _STATE_WAITING;
+        }
+
+
         g_currentState = _STATE_WAITING;
-        /*
-         * TODO: Implement recovery check
-         */
     }
 }
 
@@ -341,6 +366,12 @@ static void _SM_checkError(void)
 static uint8_t _SM_stateStopped(void)
 {
     _SM_checkSensors();
+
+    if (g_snailRunning)
+    {
+        GPIO_relayOn(GPIO_RELAY_MOTOR1);
+        return _RESULT_ERROR;
+    }
 
     if (EEPROM_readWord(EEPROM_ADDR_SYSTEM_RUNNING))
     {
@@ -599,6 +630,7 @@ static uint8_t _SM_stateSnail(void)
 
     if (!g_snailRunning)
     {
+        GPIO_relayOff(GPIO_RELAY_MOTOR1);
         return _RESULT_SUCCESS;
     }
 

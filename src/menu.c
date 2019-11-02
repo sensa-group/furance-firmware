@@ -335,7 +335,7 @@ void MENU_init(void)
     DISPLAY_gotoXY(0, 2);
     DISPLAY_showString("        |");
     DISPLAY_gotoXY(0, 3);
-    DISPLAY_showString("16.10.19|");
+    DISPLAY_showString("        |");
 
     DISPLAY_gotoXY(12, 0);
     DISPLAY_showString("MENI:");
