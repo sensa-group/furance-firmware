@@ -31,6 +31,7 @@
 #define _STATE_STOPPING                 4
 #define _STATE_WAITING                  5
 #define _STATE_SNAIL                    6
+#define _STATE_CRITICAL                 7
 
 #define _RESULT_SUCCESS                 0
 #define _RESULT_REPEATE                 1
@@ -65,16 +66,18 @@ static uint8_t _SM_stateRunning(void);
 static uint8_t _SM_stateStopping(void);
 static uint8_t _SM_stateWaiting(void);
 static uint8_t _SM_stateSnail(void);
+static uint8_t _SM_stateCritical(void);
 
 static state_t g_states[] = {
 //    Current state         Success state           Repeate state           Error state             Critical state          Callback
-    { _STATE_STOPPED,       _STATE_STARTING,        _STATE_STOPPED,         _STATE_SNAIL,           _STATE_STOPPED,         _SM_stateStopped },
-    { _STATE_STARTING,      _STATE_STABILISATION,   _STATE_STARTING,        _STATE_STOPPING,        _STATE_STOPPING,        _SM_stateStarting },
-    { _STATE_STABILISATION, _STATE_RUNNING,         _STATE_STABILISATION,   _STATE_STOPPING,        _STATE_STOPPING,        _SM_stateStabilisation },
-    { _STATE_RUNNING,       _STATE_STOPPING,        _STATE_RUNNING,         _STATE_STOPPING,        _STATE_STOPPING,        _SM_stateRunning },
-    { _STATE_STOPPING,      _STATE_WAITING,         _STATE_STOPPING,        _STATE_STOPPED,         _STATE_STOPPED,         _SM_stateStopping },
-    { _STATE_WAITING,       _STATE_STARTING,        _STATE_WAITING,         _STATE_STOPPED,         _STATE_STOPPED,         _SM_stateWaiting },
-    { _STATE_SNAIL,         _STATE_STOPPED,         _STATE_SNAIL,           _STATE_STOPPED,         _STATE_STOPPED,         _SM_stateSnail },
+    { _STATE_STOPPED,       _STATE_STARTING,        _STATE_STOPPED,         _STATE_SNAIL,           _STATE_CRITICAL,        _SM_stateStopped },
+    { _STATE_STARTING,      _STATE_STABILISATION,   _STATE_STARTING,        _STATE_STOPPING,        _STATE_CRITICAL,        _SM_stateStarting },
+    { _STATE_STABILISATION, _STATE_RUNNING,         _STATE_STABILISATION,   _STATE_STOPPING,        _STATE_CRITICAL,        _SM_stateStabilisation },
+    { _STATE_RUNNING,       _STATE_STOPPING,        _STATE_RUNNING,         _STATE_STOPPING,        _STATE_CRITICAL,        _SM_stateRunning },
+    { _STATE_STOPPING,      _STATE_WAITING,         _STATE_STOPPING,        _STATE_STOPPED,         _STATE_CRITICAL,        _SM_stateStopping },
+    { _STATE_WAITING,       _STATE_STARTING,        _STATE_WAITING,         _STATE_STOPPED,         _STATE_CRITICAL,        _SM_stateWaiting },
+    { _STATE_SNAIL,         _STATE_STOPPED,         _STATE_SNAIL,           _STATE_STOPPED,         _STATE_CRITICAL,        _SM_stateSnail },
+    { _STATE_CRITICAL,      _STATE_STOPPED,         _STATE_CRITICAL,        _STATE_STOPPED,         _STATE_CRITICAL,        _SM_stateCritical },
 };
 
 static uint8_t g_currentState;
@@ -165,6 +168,7 @@ void SM_exec(void)
 {
     uint8_t result;
     uint8_t lastState;
+
     while (1)
     {
         /*
@@ -367,6 +371,11 @@ static uint8_t _SM_stateStopped(void)
 {
     _SM_checkSensors();
 
+    if (g_error == _ERROR_TEMPERATURE_CRITICAL)
+    {
+        return _RESULT_CRITICAL;
+    }
+
     if (g_snailRunning)
     {
         GPIO_relayOn(GPIO_RELAY_MOTOR1);
@@ -406,6 +415,12 @@ static uint8_t _SM_stateStarting(void)
         _SM_checkSensors();
         _delay_ms(10);
         time += 10;
+
+        
+        if (g_error == _ERROR_TEMPERATURE_CRITICAL)
+        {
+            return _RESULT_CRITICAL;
+        }
     }
     PWM1_setFrequency(0);
 
@@ -416,6 +431,11 @@ static uint8_t _SM_stateStarting(void)
         _SM_checkSensors();
         _delay_ms(10);
         time += 10;
+
+        if (g_error == _ERROR_TEMPERATURE_CRITICAL)
+        {
+            return _RESULT_CRITICAL;
+        }
     }
     PWM0_setDutyCycle(0);
 
@@ -427,6 +447,11 @@ static uint8_t _SM_stateStarting(void)
         {
             PWM1_setFrequency(fan2Speed);
             fanStarted = 1;
+
+            if (g_error == _ERROR_TEMPERATURE_CRITICAL)
+            {
+                return _RESULT_CRITICAL;
+            }
         }
 
         _SM_checkSensors();
@@ -476,6 +501,11 @@ static uint8_t _SM_stateStabilisation(void)
             _SM_checkSensors();
             _delay_ms(10);
             time += 10;
+
+            if (g_error == _ERROR_TEMPERATURE_CRITICAL)
+            {
+                return _RESULT_CRITICAL;
+            }
         }
         GPIO_relayOff(GPIO_RELAY_HEATER);
 
@@ -485,6 +515,11 @@ static uint8_t _SM_stateStabilisation(void)
             _SM_checkSensors();
             _delay_ms(10);
             time += 10;
+
+            if (g_error == _ERROR_TEMPERATURE_CRITICAL)
+            {
+                return _RESULT_CRITICAL;
+            }
         }
     }
 
@@ -513,6 +548,11 @@ static uint8_t _SM_stateRunning(void)
         {
             _SM_checkSensors();
 
+            if (g_error == _ERROR_TEMPERATURE_CRITICAL)
+            {
+                return _RESULT_CRITICAL;
+            }
+
             if (g_temperature >= maxTemp)
             {
                 GPIO_relayOff(GPIO_RELAY_HEATER);
@@ -535,6 +575,11 @@ static uint8_t _SM_stateRunning(void)
         while (time < timeDispenserOff)
         {
             _SM_checkSensors();
+
+            if (g_error == _ERROR_TEMPERATURE_CRITICAL)
+            {
+                return _RESULT_CRITICAL;
+            }
 
             if (g_temperature >= maxTemp)
             {
@@ -575,6 +620,11 @@ static uint8_t _SM_stateStopping(void)
     {
         _SM_checkSensors();
 
+        if (g_error == _ERROR_TEMPERATURE_CRITICAL)
+        {
+            return _RESULT_CRITICAL;
+        }
+
         if (g_flame <= flameMax)
         {
             time += 10;
@@ -597,6 +647,11 @@ static uint8_t _SM_stateStopping(void)
         _SM_checkSensors();
         _delay_ms(10);
         time += 10;
+
+        if (g_error == _ERROR_TEMPERATURE_CRITICAL)
+        {
+            return _RESULT_CRITICAL;
+        }
     }
 
     PWM1_setFrequency(0);
@@ -608,6 +663,11 @@ static uint8_t _SM_stateWaiting(void)
     uint16_t tempMin = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_MIN);
 
     _SM_checkSensors();
+
+    if (g_error == _ERROR_TEMPERATURE_CRITICAL)
+    {
+        return _RESULT_CRITICAL;
+    }
 
     if (g_error != _ERROR_NO)
     {
@@ -628,6 +688,11 @@ static uint8_t _SM_stateSnail(void)
 {
     _SM_checkSensors();
 
+    if (g_error == _ERROR_TEMPERATURE_CRITICAL)
+    {
+        return _RESULT_CRITICAL;
+    }
+
     if (!g_snailRunning)
     {
         GPIO_relayOff(GPIO_RELAY_MOTOR1);
@@ -637,6 +702,62 @@ static uint8_t _SM_stateSnail(void)
     _delay_ms(10);
 
     return _RESULT_REPEATE;
+}
+
+static uint8_t _SM_stateCritical(void)
+{
+    int8_t flameTime = EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_TIME) * 1000;
+    uint16_t flameMax = EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_MAX);
+    uint8_t fanSpeed = (uint8_t)SYSTEM_MAP(EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_SPEED), 0.0, 100.0, 10.0, 20.0);
+    uint16_t fanTime = EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_TIME) * 1000;
+
+    uint8_t running = 1;
+
+    uint16_t time = 0;
+
+    PWM1_setFrequency(fanSpeed);
+
+    while (running)
+    {
+        _SM_checkSensors();
+
+        if (g_error == _ERROR_TEMPERATURE_CRITICAL)
+        {
+            return _RESULT_CRITICAL;
+        }
+
+        if (g_flame <= flameMax)
+        {
+            time += 10;
+            if (time >= flameTime)
+            {
+                running = 0;
+            }
+        }
+        else
+        {
+            time = 0;
+        }
+
+        _delay_ms(10);
+    }
+
+    time = 0;
+    while (time < fanTime)
+    {
+        _SM_checkSensors();
+        _delay_ms(10);
+        time += 10;
+
+        if (g_error == _ERROR_TEMPERATURE_CRITICAL)
+        {
+            return _RESULT_CRITICAL;
+        }
+    }
+
+    PWM1_setFrequency(0);
+
+    return _RESULT_SUCCESS;
 }
 
 /*

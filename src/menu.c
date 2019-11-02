@@ -28,81 +28,84 @@ typedef void (*ptrStateFunction)(void);
 #define _STATE_START_STOP                1
 #define _STATE_SNAIL                     2       // Punjenje puza
 #define _STATE_TEMPERATURE               3
-#define _STATE_STARTING                  4
-#define _STATE_STABILISATION             5
-#define _STATE_RUNNING                   6
-#define _STATE_STOPPING                  7
-#define _STATE_FLAME_SENSOR              8
-#define _STATE_DATE_TIME                 9
-#define _STATE_ADMINISTRATION           10
-#define _STATE_EXIT                     11
+#define _STATE_PR                        4
+#define _STATE_STARTING                  5
+#define _STATE_STABILISATION             6
+#define _STATE_RUNNING                   7
+#define _STATE_STOPPING                  8
+#define _STATE_FLAME_SENSOR              9
+#define _STATE_DATE_TIME                10
+#define _STATE_ADMINISTRATION           11
+#define _STATE_EXIT                     12
 
-#define _STATE_TEMPERATURE_MIN          12
-#define _STATE_TEMPERATURE_MAX          13
-#define _STATE_TEMPERATURE_EX           14
+#define _STATE_TEMPERATURE_MIN          13
+#define _STATE_TEMPERATURE_MAX          14
+#define _STATE_TEMPERATURE_EX           15
 
-#define _STATE_TEMPERATURE_MIN_O        15
-#define _STATE_TEMPERATURE_MAX_O        16
+#define _STATE_TEMPERATURE_MIN_O        16
+#define _STATE_TEMPERATURE_MAX_O        17
 
-#define _STATE_START_FAN1_T             17
-#define _STATE_START_FAN1_S             18
-#define _STATE_START_DISPENSER          19
-#define _STATE_START_HEATER_T           20
-#define _STATE_START_FAN2_T             21
-#define _STATE_START_FAN2_S             22
-#define _STATE_START_EX                 23
+#define _STATE_START_FAN1_T             18
+#define _STATE_START_FAN1_S             19
+#define _STATE_START_DISPENSER          20
+#define _STATE_START_HEATER_T           21
+#define _STATE_START_FAN2_T             22
+#define _STATE_START_FAN2_S             23
+#define _STATE_START_EX                 24
 
-#define _STATE_START_FAN1_T_O           24
-#define _STATE_START_FAN1_S_O           25
-#define _STATE_START_DISPENSER_O        26
-#define _STATE_START_HEATER_T_O         27
-#define _STATE_START_FAN2_T_O           28
-#define _STATE_START_FAN2_S_O           29
+#define _STATE_START_FAN1_T_O           25
+#define _STATE_START_FAN1_S_O           26
+#define _STATE_START_DISPENSER_O        27
+#define _STATE_START_HEATER_T_O         28
+#define _STATE_START_FAN2_T_O           29
+#define _STATE_START_FAN2_S_O           30
 
-#define _STATE_STAB_DISPENSER_ON        30
-#define _STATE_STAB_DISPENSER_OFF       31
-#define _STATE_STAB_FAN_S               32
-#define _STATE_STAB_TOTAL_T             33
-#define _STATE_STAB_EX                  34
+#define _STATE_STAB_DISPENSER_ON        31
+#define _STATE_STAB_DISPENSER_OFF       32
+#define _STATE_STAB_FAN_S               33
+#define _STATE_STAB_TOTAL_T             34
+#define _STATE_STAB_EX                  35
 
-#define _STATE_STAB_DISPENSER_ON_O      35
-#define _STATE_STAB_DISPENSER_OFF_O     36
-#define _STATE_STAB_FAN_S_O             37
-#define _STATE_STAB_TOTAL_T_O           38
+#define _STATE_STAB_DISPENSER_ON_O      36
+#define _STATE_STAB_DISPENSER_OFF_O     37
+#define _STATE_STAB_FAN_S_O             38
+#define _STATE_STAB_TOTAL_T_O           39
 
-#define _STATE_RUN_DISPENSER_ON         39
-#define _STATE_RUN_DISPENSER_OFF        40
-#define _STATE_RUN_FAN_S                41
-#define _STATE_RUN_EX                   42
+#define _STATE_RUN_DISPENSER_ON         40
+#define _STATE_RUN_DISPENSER_OFF        41
+#define _STATE_RUN_FAN_S                42
+#define _STATE_RUN_EX                   43
 
-#define _STATE_RUN_DISPENSER_ON_O       43
-#define _STATE_RUN_DISPENSER_OFF_O      44
-#define _STATE_RUN_FAN_S_O              45
+#define _STATE_RUN_DISPENSER_ON_O       44
+#define _STATE_RUN_DISPENSER_OFF_O      45
+#define _STATE_RUN_FAN_S_O              46
 
-#define _STATE_STOP_FAN_T               46
-#define _STATE_STOP_FAN_S               47
-#define _STATE_STOP_EX                  48
+#define _STATE_STOP_FAN_T               47
+#define _STATE_STOP_FAN_S               48
+#define _STATE_STOP_EX                  49
 
-#define _STATE_STOP_FAN_T_O             49
-#define _STATE_STOP_FAN_S_O             50
+#define _STATE_STOP_FAN_T_O             50
+#define _STATE_STOP_FAN_S_O             51
 
-#define _STATE_FLAME_MIN                51
-#define _STATE_FLAME_MIN_T              52
-#define _STATE_FLAME_MAX                53
-#define _STATE_FLAME_MAX_T              54
-#define _STATE_FLAME_EX                 55
+#define _STATE_FLAME_MIN                52
+#define _STATE_FLAME_MIN_T              53
+#define _STATE_FLAME_MAX                54
+#define _STATE_FLAME_MAX_T              55
+#define _STATE_FLAME_EX                 56
 
-#define _STATE_FLAME_MIN_O              56
-#define _STATE_FLAME_MIN_T_O            57
-#define _STATE_FLAME_MAX_O              58
-#define _STATE_FLAME_MAX_T_O            59
+#define _STATE_FLAME_MIN_O              57
+#define _STATE_FLAME_MIN_T_O            58
+#define _STATE_FLAME_MAX_O              59
+#define _STATE_FLAME_MAX_T_O            60
 
-#define _STATE_ADMIN_TEMP_CRT           60
-#define _STATE_ADMIN_TEMP_START         61
-#define _STATE_ADMIN_EX                 62
+#define _STATE_ADMIN_TEMP_CRT           61
+#define _STATE_ADMIN_TEMP_START         62
+#define _STATE_ADMIN_EX                 63
 
-#define _STATE_ADMIN_TEMP_CRT_O         63
-#define _STATE_ADMIN_TEMP_START_O       64
+#define _STATE_ADMIN_TEMP_CRT_O         64
+#define _STATE_ADMIN_TEMP_START_O       65
+
+#define _STATE_PR_EX                    66
 
 /*
  * Results
@@ -137,11 +140,12 @@ const char *g_text[] = {
     "Start/Stop",                           // _STATE_START_STOP
     "Puz On/Off",                           // _STATE_SNAIL
     "Temp",                                 // _STATE_TEMPERATURE
+    "Prov.",                                // _STATE_PR
     "Potpala",                              // _STATE_STARTING
-    "Stabiiliza",                           // _STATE_STABILISATION
+    "Stabil.",                              // _STATE_STABILISATION
     "Rad",                                  // _STATE_RUNNING
     "Gasenje",                              // _STATE_STOPPING
-    "Plamen",                               // _STATE_FLAME_SENSOR
+    "Oko",                                  // _STATE_FLAME_SENSOR
     "Datum i Vr",                           // _STATE_DATE_TIME
     "Servis",                               // _STATE_ADMINISTRATION
     "Izlaz",                                // _STATE_EXIT
@@ -153,58 +157,58 @@ const char *g_text[] = {
     "Min",                                  // _STATE_TEMPERATURE_MIM_O
     "Max",                                  // _STATE_TEMPERATURE_MAX_O
 
-    "Brzina V 1",                           // _STATE_START_FAN1_T
-    "Vreme V 1",                            // _STATE_START_FAN1_S
-    "Vreme D",                              // _STATE_START_DISPENSER
-    "Vreme G",                              // _STATE_START_HEATER_T
-    "Brzina V 2",                           // _STATE_START_FAN2_T
-    "Vreme V 2",                            // _STATE_START_FAN2_S
+    "Vreme",                                // _STATE_START_FAN1_T
+    "Brzina",                               // _STATE_START_FAN1_S
+    "Pocetno D",                            // _STATE_START_DISPENSER
+    "V. Potpale",                           // _STATE_START_HEATER_T
+    "Cekanje V.",                           // _STATE_START_FAN2_T
+    "Brzina V.",                            // _STATE_START_FAN2_S
     "Izlaz",                                // _STATE_START_EX
 
-    "Brzina V 1",                           // _STATE_START_FAN1_T_O
-    "Vreme V 1",                            // _STATE_START_FAN1_S_O
-    "Vreme D",                              // _STATE_START_DISPENSER_O
-    "Vreme G",                              // _STATE_START_HEATER_T_O
-    "Brzina V 2",                           // _STATE_START_FAN2_T_O
-    "Vreme V 2",                            // _STATE_START_FAN2_S_O
+    "Vreme",                                // _STATE_START_FAN1_T_O
+    "Brzina",                               // _STATE_START_FAN1_S_O
+    "Pocetno D",                            // _STATE_START_DISPENSER_O
+    "V. Potpale",                           // _STATE_START_HEATER_T_O
+    "Cekanje V.",                           // _STATE_START_FAN2_T_O
+    "Brzina V.",                            // _STATE_START_FAN2_S_O
 
-    "Dozator on",                           // _STATE_STAB_DISPENSER_ON
-    "Dozator of",                           // _STATE_STAB_DISPENSER_OFF
-    "Vreme V",                              // _STATE_STAB_FAN_S
+    "Doziranje",                            // _STATE_STAB_DISPENSER_ON
+    "Doz.Pauza",                            // _STATE_STAB_DISPENSER_OFF
+    "Brzina V.",                            // _STATE_STAB_FAN_S
     "Broj pon.",                            // _STATE_STAB_TOTAL_T
     "Izlaz",                                // _STATE_STAB_EX
 
-    "Dozator on",                           // _STATE_STAB_DISPENSER_ON_O
-    "Dozator of",                           // _STATE_STAB_DISPENSER_OFF_O
-    "Vreme V",                              // _STATE_STAB_FAN_S_O
-    "Ukupno vr",                            // _STATE_STAB_TOTAL_T_O
+    "Doziranje",                            // _STATE_STAB_DISPENSER_ON_O
+    "Pauza.Doz",                            // _STATE_STAB_DISPENSER_OFF_O
+    "Brzina V.",                            // _STATE_STAB_FAN_S_O
+    "Broj pon.",                            // _STATE_STAB_TOTAL_T_O
 
-    "Dozator on",                           // _STATE_RUN_DISPENSER_ON
-    "Dozator of",                           // _STATE_RUN_DISPENSER_OFF
-    "Vreme V",                              // _STATE_RUN_FAN_S
+    "Doziranje",                            // _STATE_RUN_DISPENSER_ON
+    "Pauza.Doz",                            // _STATE_RUN_DISPENSER_OFF
+    "Brzina V.",                            // _STATE_RUN_FAN_S
     "Izlaz",                                // _STATE_RUN_EX
 
-    "Dozator on",                           // _STATE_RUN_DISPENSER_ON_O
-    "Dozator of",                           // _STATE_RUN_DISPENSER_OFF_O
-    "Vreme V",                              // _STATE_RUN_FAN_S_O
+    "Doziranje",                            // _STATE_RUN_DISPENSER_ON_O
+    "Pauza.Doz",                            // _STATE_RUN_DISPENSER_OFF_O
+    "Brzina V.",                            // _STATE_RUN_FAN_S_O
 
-    "Brzina V",                             // _STATE_STOP_FAN_T
-    "Vreme V",                              // _STATE_STOP_FAN_S
+    "Vreme V.",                             // _STATE_STOP_FAN_T
+    "Brzina V.",                            // _STATE_STOP_FAN_S
     "Izlaz",                                // _STATE_STOP_EX
 
-    "Brzina V",                             // _STATE_STOP_FAN_T_O
-    "Vreme V",                              // _STATE_STOP_FAN_S_O
+    "Vreme V.",                             // _STATE_STOP_FAN_T_O
+    "Brzina V.",                            // _STATE_STOP_FAN_S_O
 
-    "Pl min",                               // _STATE_FLAME_MIN
-    "Pl min v",                             // _STATE_FLAME_MIN_T
-    "Pl max",                               // _STATE_FLAME_MAX
-    "Pl max v",                             // _STATE_FLAME_MAX_T
+    "Oko min",                              // _STATE_FLAME_MIN
+    "Oko min V.",                           // _STATE_FLAME_MIN_T
+    "Oko max",                              // _STATE_FLAME_MAX
+    "Oko max V.",                           // _STATE_FLAME_MAX_T
     "Izlaz",                                // _STATE_FLAME_EX
 
-    "Pl min",                               // _STATE_FLAME_MIN_O
-    "Pl min v",                             // _STATE_FLAME_MIN_T_O
-    "Pl max",                               // _STATE_FLAME_MAX_O
-    "Pl max v",                             // _STATE_FLAME_MAX_T_O
+    "Oko min",                              // _STATE_FLAME_MIN_O
+    "Oko min V.",                           // _STATE_FLAME_MIN_T_O
+    "Oko max",                              // _STATE_FLAME_MAX_O
+    "Oko max V.",                           // _STATE_FLAME_MAX_T_O
 
     "Krit temp",                            // _STATE_ADMIN_TEMP_CRT
     "Start temp",                           // _STATE_ADMIN_TEMP_START
@@ -212,6 +216,8 @@ const char *g_text[] = {
 
     "Krit temp",                            // _STATE_ADMIN_TEMP_CRT_O
     "Start temp",                           // _STATE_ADMIN_TEMP_START_O
+
+    "Izlaz",                                // _STATE_PR_EX
 };
 
 static state_t g_states[] = {
@@ -219,8 +225,9 @@ static state_t g_states[] = {
     { _STATE_NO_MENU,               _TYPE_SUBMENU,      _STATE_NO_MENU,             _STATE_NO_MENU,                 _STATE_START_STOP,                  0,                                              0,          0,          0},
     { _STATE_START_STOP,            _TYPE_ACTION,       _STATE_SNAIL,               _STATE_START_STOP,              _STATE_NO_MENU,                     0,                                              0,          0,          SM_startStop},
     { _STATE_SNAIL,                 _TYPE_ACTION,       _STATE_TEMPERATURE,         _STATE_START_STOP,              _STATE_NO_MENU,                     0,                                              0,          0,          SM_snailStartStop},
-    { _STATE_TEMPERATURE,           _TYPE_SUBMENU,      _STATE_STARTING,            _STATE_SNAIL,                   _STATE_TEMPERATURE_MIN,             0,                                              0,          0,          0},
-    { _STATE_STARTING,              _TYPE_SUBMENU,      _STATE_STABILISATION,       _STATE_TEMPERATURE,             _STATE_START_FAN1_T,                0,                                              0,          0,          0},
+    { _STATE_TEMPERATURE,           _TYPE_SUBMENU,      _STATE_PR,                  _STATE_SNAIL,                   _STATE_TEMPERATURE_MIN,             0,                                              0,          0,          0},
+    { _STATE_PR,                    _TYPE_SUBMENU,      _STATE_STARTING,            _STATE_TEMPERATURE,             _STATE_START_FAN1_T,                0,                                              0,          0,          0},
+    { _STATE_STARTING,              _TYPE_SUBMENU,      _STATE_STABILISATION,       _STATE_PR,                      _STATE_START_DISPENSER,             0,                                              0,          0,          0},
     { _STATE_STABILISATION,         _TYPE_SUBMENU,      _STATE_RUNNING,             _STATE_STARTING,                _STATE_STAB_DISPENSER_ON,           0,                                              0,          0,          0},
     { _STATE_RUNNING,               _TYPE_SUBMENU,      _STATE_STOPPING,            _STATE_STABILISATION,           _STATE_RUN_DISPENSER_ON,            0,                                              0,          0,          0},
     { _STATE_STOPPING,              _TYPE_SUBMENU,      _STATE_FLAME_SENSOR,        _STATE_RUNNING,                 _STATE_STOP_FAN_T,                  0,                                              0,          0,          0},
@@ -237,8 +244,8 @@ static state_t g_states[] = {
     {_STATE_TEMPERATURE_MAX_O,      _TYPE_OPTION,       0,                          0,                              _STATE_TEMPERATURE_MAX,             EEPROM_ADDR_GLOBAL_TEMP_MAX,                    0,          99,         0},
 
     {_STATE_START_FAN1_T,           _TYPE_SUBMENU,      _STATE_START_FAN1_S,        _STATE_START_FAN1_T,            _STATE_START_FAN1_T_O,              0,                                              0,          0,          0},
-    {_STATE_START_FAN1_S,           _TYPE_SUBMENU,      _STATE_START_DISPENSER,     _STATE_START_FAN1_T,            _STATE_START_FAN1_S_O,              0,                                              0,          0,          0},
-    {_STATE_START_DISPENSER,        _TYPE_SUBMENU,      _STATE_START_HEATER_T,      _STATE_START_FAN1_S,            _STATE_START_DISPENSER_O,           0,                                              0,          0,          0},
+    {_STATE_START_FAN1_S,           _TYPE_SUBMENU,      _STATE_PR_EX,               _STATE_START_FAN1_T,            _STATE_START_FAN1_S_O,              0,                                              0,          0,          0},
+    {_STATE_START_DISPENSER,        _TYPE_SUBMENU,      _STATE_START_HEATER_T,      _STATE_START_DISPENSER,         _STATE_START_DISPENSER_O,           0,                                              0,          0,          0},
     {_STATE_START_HEATER_T,         _TYPE_SUBMENU,      _STATE_START_FAN2_T,        _STATE_START_DISPENSER,         _STATE_START_HEATER_T_O,            0,                                              0,          0,          0},
     {_STATE_START_FAN2_T,           _TYPE_SUBMENU,      _STATE_START_FAN2_S,        _STATE_START_HEATER_T,          _STATE_START_FAN2_T_O,              0,                                              0,          0,          0},
     {_STATE_START_FAN2_S,           _TYPE_SUBMENU,      _STATE_START_EX,            _STATE_START_FAN2_T,            _STATE_START_FAN2_S_O,              0,                                              0,          0,          0},
@@ -295,6 +302,8 @@ static state_t g_states[] = {
 
     {_STATE_ADMIN_TEMP_CRT_O,       _TYPE_OPTION,       0,                          0,                              _STATE_ADMIN_TEMP_CRT,              EEPROM_ADDR_GLOBAL_TEMP_CRITICAL,               0,          99,        0},
     {_STATE_ADMIN_TEMP_START_O,     _TYPE_OPTION,       0,                          0,                              _STATE_ADMIN_TEMP_START,            EEPROM_ADDR_GLOBAL_TEMP_START,                  0,          99,         0},
+
+    {_STATE_PR_EX,                  _TYPE_SUBMENU,      _STATE_PR_EX,               _STATE_START_FAN1_S,            _STATE_PR,                          0,                                              0,          0,          0},
 };
 
 static uint8_t g_currentState;
@@ -391,7 +400,7 @@ void MENU_refresh(void)
             DISPLAY_gotoXY(0, 2);
             DISPLAY_showString("        |");
             DISPLAY_gotoXY(0, 3);
-            DISPLAY_showString("16.10.19|");
+            DISPLAY_showString("        |");
 
             DISPLAY_gotoXY(12, 0);
             DISPLAY_showString("MENI:");

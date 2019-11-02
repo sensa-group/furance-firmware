@@ -86,6 +86,11 @@ void PWM1_setFrequency(uint32_t frequency)
 {
     cli();
 
+    if (frequency == 20)
+    {
+        frequency = 1;
+    }
+
     _frequency = frequency;
     _tick = 0;
     TCNT1 = 0;
