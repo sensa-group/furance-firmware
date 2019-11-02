@@ -16,7 +16,7 @@ void SM_exec(void);
 
 void SM_start(void);
 void SM_stop(void);
-void SM_snaiStart(void);
+void SM_snailStart(void);
 void SM_snailStop(void);
 
 void SM_startStop(void);

@@ -107,6 +107,14 @@ typedef void (*ptrStateFunction)(void);
 
 #define _STATE_PR_EX                    66
 
+#define _STATE_STARTSTOP_START          67
+#define _STATE_STARTSTOP_STOP           68
+#define _STATE_STARTSTOP_EX             69
+
+#define _STATE_SNAIL_START              70
+#define _STATE_SNAIL_STOP               71
+#define _STATE_SNAIL_EX                 72
+
 /*
  * Results
  */
@@ -218,13 +226,21 @@ const char *g_text[] = {
     "Start temp",                           // _STATE_ADMIN_TEMP_START_O
 
     "Izlaz",                                // _STATE_PR_EX
+
+    "Start",                                // _STATE_STARTSTOP_START
+    "Stop",                                 // _STATE_STARTSTOP_STOP
+    "Izlaz",                                // _STATE_STARTSTOP_EX
+
+    "Start",                                // _STATE_SNAIL_START
+    "Stop",                                 // _STATE_SNAIL_STOP
+    "Izlaz",                                // _STATE_SNAIL_EX
 };
 
 static state_t g_states[] = {
 //    Current state                 Type                Next state                  Prev state                      Click state                         Eeprom register                                 Value min   Value max   Callback
     { _STATE_NO_MENU,               _TYPE_SUBMENU,      _STATE_NO_MENU,             _STATE_NO_MENU,                 _STATE_START_STOP,                  0,                                              0,          0,          0},
-    { _STATE_START_STOP,            _TYPE_ACTION,       _STATE_SNAIL,               _STATE_START_STOP,              _STATE_NO_MENU,                     0,                                              0,          0,          SM_startStop},
-    { _STATE_SNAIL,                 _TYPE_ACTION,       _STATE_TEMPERATURE,         _STATE_START_STOP,              _STATE_NO_MENU,                     0,                                              0,          0,          SM_snailStartStop},
+    { _STATE_START_STOP,            _TYPE_SUBMENU,      _STATE_SNAIL,               _STATE_START_STOP,              _STATE_STARTSTOP_START,             0,                                              0,          0,          0},
+    { _STATE_SNAIL,                 _TYPE_SUBMENU,      _STATE_TEMPERATURE,         _STATE_START_STOP,              _STATE_SNAIL_START,                 0,                                              0,          0,          0},
     { _STATE_TEMPERATURE,           _TYPE_SUBMENU,      _STATE_PR,                  _STATE_SNAIL,                   _STATE_TEMPERATURE_MIN,             0,                                              0,          0,          0},
     { _STATE_PR,                    _TYPE_SUBMENU,      _STATE_STARTING,            _STATE_TEMPERATURE,             _STATE_START_FAN1_T,                0,                                              0,          0,          0},
     { _STATE_STARTING,              _TYPE_SUBMENU,      _STATE_STABILISATION,       _STATE_PR,                      _STATE_START_DISPENSER,             0,                                              0,          0,          0},
@@ -304,6 +320,14 @@ static state_t g_states[] = {
     {_STATE_ADMIN_TEMP_START_O,     _TYPE_OPTION,       0,                          0,                              _STATE_ADMIN_TEMP_START,            EEPROM_ADDR_GLOBAL_TEMP_START,                  0,          99,         0},
 
     {_STATE_PR_EX,                  _TYPE_SUBMENU,      _STATE_PR_EX,               _STATE_START_FAN1_S,            _STATE_PR,                          0,                                              0,          0,          0},
+
+    {_STATE_STARTSTOP_START,        _TYPE_ACTION,       _STATE_STARTSTOP_STOP,      _STATE_STARTSTOP_START,         _STATE_NO_MENU,                     0,                                              0,          0,          SM_start},
+    {_STATE_STARTSTOP_STOP,         _TYPE_ACTION,       _STATE_STARTSTOP_EX,        _STATE_STARTSTOP_START,         _STATE_STARTSTOP_STOP,              0,                                              0,          0,          SM_stop},
+    {_STATE_STARTSTOP_EX,           _TYPE_SUBMENU,      _STATE_STARTSTOP_EX,        _STATE_STARTSTOP_STOP,          _STATE_START_STOP,                  0,                                              0,          0,          0},
+
+    {_STATE_SNAIL_START,            _TYPE_ACTION,       _STATE_SNAIL_STOP,          _STATE_SNAIL_START,             _STATE_NO_MENU,                     0,                                              0,          0,          SM_snailStart},
+    {_STATE_SNAIL_STOP,             _TYPE_ACTION,       _STATE_SNAIL_EX,            _STATE_SNAIL_START,             _STATE_NO_MENU,                     0,                                              0,          0,          SM_snailStop},
+    {_STATE_SNAIL_EX,               _TYPE_SUBMENU,      _STATE_SNAIL_EX,            _STATE_SNAIL_STOP,              _STATE_SNAIL,                       0,                                              0,          0,          0},
 };
 
 static uint8_t g_currentState;
@@ -313,6 +337,8 @@ static uint8_t g_encALastState;
 static uint8_t g_encBLastState;
 
 static uint16_t g_optionValue;
+
+static int8_t g_tick;
 
 static volatile uint8_t g_refreshDisplay;
 
@@ -353,6 +379,8 @@ void MENU_init(void)
 
     //g_refreshDisplay = _REFRESH_DISPLAY_INIT;
     _showMenuItem(g_text[g_currentState], g_text[g_states[g_currentState].nextStateId], 0);
+
+    g_tick = 0;
 }
 
 void MENU_refreshSensorValue(uint16_t temperature, uint16_t flame)
@@ -438,7 +466,7 @@ void MENU_refresh(void)
             }
             else if (g_optionValue > g_states[g_currentState].valueMax)
             {
-                g_optionValue = g_states[g_currentState].valueMax;
+                g_optionValue = g_states[g_currentState].valueMin;
             }
             _showMenuOption(g_optionValue);
             break;
@@ -660,13 +688,17 @@ ISR(PCINT0_vect)
         }
     }
 
-    if (side > 0)
+    g_tick += side;
+
+    if (g_tick >= 2)
     {
         _handleNext();
+        g_tick = 0;
     }
-    else if (side < 0)
+    else if (g_tick <= -2)
     {
         _handlePrev();
+        g_tick = 0;
     }
 
     g_encALastState = encACurrentState;

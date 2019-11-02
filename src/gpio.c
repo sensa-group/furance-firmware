@@ -29,7 +29,7 @@ void GPIO_init(void)
 void GPIO_buzzerOn(void) 
 {
     //GPIO_BUZZER_PORT |= (1 << GPIO_BUZZER_PIN);
-    PWM2_setFrequency(2);
+    PWM2_setFrequency(1);
 }
 
 void GPIO_buzzerOff(void) 

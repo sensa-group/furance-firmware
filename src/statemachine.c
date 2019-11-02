@@ -237,18 +237,24 @@ void SM_exec(void)
 
 void SM_start(void)
 {
+    EEPROM_writeWord(EEPROM_ADDR_SYSTEM_RUNNING, 1);
 }
 
 void SM_stop(void)
 {
+    EEPROM_writeWord(EEPROM_ADDR_SYSTEM_RUNNING, 0);
 }
 
-void SM_snaiStart(void)
+void SM_snailStart(void)
 {
+    //EEPROM_writeWord(EEPROM_ADDR_SYSTEM_RUNNING, 1);
+    g_snailRunning = 1;
 }
 
 void SM_snailStop(void)
 {
+    //EEPROM_writeWord(EEPROM_ADDR_SYSTEM_RUNNING, 0);
+    g_snailRunning = 0;
 }
 
 void SM_startStop(void)
@@ -292,8 +298,28 @@ static void _SM_refreshDisplay(void)
 
 static void _SM_checkSensors(void)
 {
-    uint16_t flame = ADC_read(0b111);
+    uint16_t flame;
     double temperature = ds18b20_gettemp();
+    //= ADC_read(0b111);
+
+    uint8_t i = 0;
+    while (((uint16_t)temperature) == 0)
+    {
+        temperature = ds18b20_gettemp();
+        if (i > 3)
+        {
+            g_error = _ERROR_TEMPERATURE_DISCONNECTED;
+            break;
+        }
+    }
+    i = 0;
+    double flame2 = 0;
+    for (i = 0; i < 10; i++)
+    {
+        flame2 += ADC_read(0b111);
+    }
+    flame2 /= 10.0;
+    flame = (uint16_t)flame2;
 
     /*
     UART_writeString("R: ");
@@ -305,11 +331,7 @@ static void _SM_checkSensors(void)
 
     if (flame == 1023)
     {
-        //g_error = _ERROR_FLAME_DISCONNECTED;
-    }
-    if (((uint16_t)temperature) == 0)
-    {
-        g_error = _ERROR_TEMPERATURE_DISCONNECTED;
+        g_error = _ERROR_FLAME_DISCONNECTED;
     }
 
     //flame = SYSTEM_MAP(flame, 1020, 100, 0, 100);
@@ -378,7 +400,7 @@ static uint8_t _SM_stateStopped(void)
 
     if (g_snailRunning)
     {
-        GPIO_relayOn(GPIO_RELAY_MOTOR1);
+        PWM0_setDutyCycle(255);
         return _RESULT_ERROR;
     }
 
@@ -695,7 +717,7 @@ static uint8_t _SM_stateSnail(void)
 
     if (!g_snailRunning)
     {
-        GPIO_relayOff(GPIO_RELAY_MOTOR1);
+        PWM0_setDutyCycle(0);
         return _RESULT_SUCCESS;
     }
 

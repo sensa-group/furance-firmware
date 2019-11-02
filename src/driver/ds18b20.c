@@ -119,7 +119,13 @@ double ds18b20_gettemp() {
         ds18b20_writebyte(DS18B20_CMD_SKIPROM); //skip ROM
         ds18b20_writebyte(DS18B20_CMD_CONVERTTEMP); //start temperature conversion
 
+        #if DS18B20_STOPINTERRUPTONREAD == 1
+        sei();
+        #endif
         while(!ds18b20_readbit()); //wait until conversion is complete
+        #if DS18B20_STOPINTERRUPTONREAD == 1
+        cli();
+        #endif
 
         ds18b20_reset(); //reset
         ds18b20_writebyte(DS18B20_CMD_SKIPROM); //skip ROM
