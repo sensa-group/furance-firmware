@@ -37,6 +37,11 @@
 #define _RESULT_ERROR                   2
 #define _RESULT_CRITICAL                3
 
+#define _ERROR_NO                               0
+#define _ERROR_TEMPERATURE_CRITICAL             1
+#define _ERROR_TEMPERATURE_DISCONNECTED         2
+#define _ERROR_FLAME_DISCONNECTED               3
+
 typedef uint8_t (*ptrStateFunction)(void);
 
 typedef struct
@@ -51,6 +56,7 @@ typedef struct
 
 static void _SM_refreshDisplay(void);
 static void _SM_checkSensors(void);
+static void _SM_checkError(void);
 
 static uint8_t _SM_stateStopped(void);
 static uint8_t _SM_stateStarting(void);
@@ -73,30 +79,19 @@ static state_t g_states[] = {
 
 static uint8_t g_currentState;
 
-static volatile uint8_t g_refreshDisplay;
-static volatile char *g_displayDescription;
-static volatile char *g_displayDescription2;
-static volatile uint16_t g_displayOptionValue;
-static volatile uint16_t g_displayTemperature;
-
 static double g_temperature = 0.0;
 static double g_flame = 0;
 
-static uint32_t g_stateStartTime = 0;
-static uint8_t g_stateInitialized = 0;
-
-static uint32_t g_fanPwmLastSwitchTime = 0;
-static uint32_t g_flameDetectTime;
-static uint8_t g_flameDetected = 0;
-
-static uint32_t g_dispenserLastSwitchTime = 0;
-static uint8_t g_dispenserOn = 0;
-
 volatile static uint8_t g_snailRunning = 0;
+
+static uint8_t g_lastError;
+static uint8_t g_error;
 
 void SM_init(void)
 {
     g_currentState = _STATE_STOPPED;
+    g_error = _ERROR_NO;
+    g_lastError = g_error;
 
     UART_init();                                                            // For debugging
 
@@ -115,6 +110,20 @@ void SM_init(void)
     DISPLAY_init();                                                         // Initialize display
 
     MENU_init();                                                            // Initialize menu
+
+    /*
+    TCNT0 = 0;
+    OCR0A = 0;
+    OCR0B = 0;
+
+    //TCCR1A = (1 << COM1A1);
+    TCCR0B = (1<< CS00) | (1 << WGM02);
+    TIMSK0 = (1 << OCIE0A);
+
+    TCNT0 = 0;
+
+    OCR0A = 16000;
+    */
 
     _delay_ms(1000);                                                        // Just in case :D
 
@@ -254,14 +263,85 @@ static void _SM_refreshDisplay(void)
 
 static void _SM_checkSensors(void)
 {
-    g_flame = ADC_read(0b111);
-    g_temperature = ds18b20_gettemp();
+    uint16_t flame = ADC_read(0b111);
+    double temperature = ds18b20_gettemp();
 
-    MENU_refreshSensorValue((uint16_t)g_temperature, (uint16_t)g_flame);
+    /*
+    UART_writeString("R: ");
+    UART_writeIntegerString(flame);
+    UART_writeString("\n");
+    */
+
+    g_error = _ERROR_NO;
+
+    if (flame == 1023)
+    {
+        //g_error = _ERROR_FLAME_DISCONNECTED;
+    }
+    if (((uint16_t)temperature) == 0)
+    {
+        g_error = _ERROR_TEMPERATURE_DISCONNECTED;
+    }
+
+    //flame = SYSTEM_MAP(flame, 1020, 100, 0, 100);
+    //flame = 100 - SYSTEM_MAP(flame, 100, 1023, 0, 100);
+    flame = (uint16_t)SYSTEM_MAP(flame, 1023.0, 100.0, 0.0, 100.0);
+
+    if (g_flame != flame || g_temperature != temperature)
+    {
+        /*
+        UART_writeString("T: ");
+        UART_writeIntegerString(temperature);
+        UART_writeString("\n");
+        UART_writeString("F: ");
+        UART_writeIntegerString(flame);
+        UART_writeString("\n");
+        */
+        cli();
+        MENU_refreshSensorValue((uint16_t)temperature, (uint16_t)flame);
+        sei();
+    }
+
+
+    g_flame = flame;
+    g_temperature = temperature;
+
+    _SM_checkError();
+}
+
+static void _SM_checkError(void)
+{
+    if (g_error != g_lastError)
+    {
+        cli();
+        switch (g_error)
+        {
+            case _ERROR_NO:
+                MENU_refreshError("", "");
+                GPIO_buzzerOff();
+                break;
+            case _ERROR_TEMPERATURE_CRITICAL:
+                MENU_refreshError("G:RAD", "KRIT TEM");
+                GPIO_buzzerOn();
+                break;
+            case _ERROR_TEMPERATURE_DISCONNECTED:
+                MENU_refreshError("G:SENZOR", "TEMP");
+                GPIO_buzzerOn();
+                break;
+            case _ERROR_FLAME_DISCONNECTED:
+                MENU_refreshError("G:SENZOR", "OKO");
+                GPIO_buzzerOn();
+                break;
+        }
+        sei();
+    }
+    g_lastError = g_error;
 }
 
 static uint8_t _SM_stateStopped(void)
 {
+    _SM_checkSensors();
+
     if (EEPROM_readWord(EEPROM_ADDR_SYSTEM_RUNNING))
     {
         return _RESULT_SUCCESS;
@@ -292,6 +372,7 @@ static uint8_t _SM_stateStarting(void)
     time = 0;
     while (time < fan1Time)
     {
+        _SM_checkSensors();
         _delay_ms(10);
         time += 10;
     }
@@ -301,6 +382,7 @@ static uint8_t _SM_stateStarting(void)
     time = 0;
     while (time < dispenserTime)
     {
+        _SM_checkSensors();
         _delay_ms(10);
         time += 10;
     }
@@ -346,7 +428,7 @@ static uint8_t _SM_stateStarting(void)
 static uint8_t _SM_stateStabilisation(void)
 {
     uint16_t stabilisationTime = EEPROM_readWord(EEPROM_ADDR_STABILISATION_TOTAL_TIME);
-    uint8_t fanSpeed = SYSTEM_MAP((uint8_t)EEPROM_readWord(EEPROM_ADDR_STABILISATION_FAN_SPEED), 0, 100, 1, 20);
+    uint8_t fanSpeed = (uint8_t)SYSTEM_MAP(EEPROM_readWord(EEPROM_ADDR_STABILISATION_FAN_SPEED), 0, 100.0, 1.0, 20.0);
     uint16_t timeDispenserOn = EEPROM_readWord(EEPROM_ADDR_STABILISATION_DISPENSER_TIME_ON) * 1000;
     uint16_t timeDispenserOff = EEPROM_readWord(EEPROM_ADDR_STABILISATION_DISPENSER_TIME_OFF) * 1000;
 
@@ -360,6 +442,7 @@ static uint8_t _SM_stateStabilisation(void)
         time = 0;
         while (time < timeDispenserOn)
         {
+            _SM_checkSensors();
             _delay_ms(10);
             time += 10;
         }
@@ -368,6 +451,7 @@ static uint8_t _SM_stateStabilisation(void)
         time = 0;
         while (time < timeDispenserOff)
         {
+            _SM_checkSensors();
             _delay_ms(10);
             time += 10;
         }
@@ -429,6 +513,7 @@ static uint8_t _SM_stateRunning(void)
             }
             if (g_temperature >= criticalTemp)
             {
+                g_error = _ERROR_TEMPERATURE_CRITICAL;
                 GPIO_relayOff(GPIO_RELAY_HEATER);
                 PWM1_setFrequency(0);
                 return _RESULT_CRITICAL;
@@ -446,7 +531,7 @@ static uint8_t _SM_stateStopping(void)
 {
     int8_t flameTime = EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_TIME) * 1000;
     uint16_t flameMax = EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_MAX);
-    uint8_t fanSpeed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_SPEED);
+    uint8_t fanSpeed = (uint8_t)SYSTEM_MAP(EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_SPEED), 0.0, 100.0, 10.0, 20.0);
     uint16_t fanTime = EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_TIME) * 1000;
 
     uint8_t running = 1;
@@ -457,10 +542,12 @@ static uint8_t _SM_stateStopping(void)
 
     while (running)
     {
+        _SM_checkSensors();
+
         if (g_flame <= flameMax)
         {
             time += 10;
-            if (time >= fanTime)
+            if (time >= flameTime)
             {
                 running = 0;
             }
@@ -473,6 +560,14 @@ static uint8_t _SM_stateStopping(void)
         _delay_ms(10);
     }
 
+    time = 0;
+    while (time < fanTime)
+    {
+        _SM_checkSensors();
+        _delay_ms(10);
+        time += 10;
+    }
+
     PWM1_setFrequency(0);
     return _RESULT_SUCCESS;
 }
@@ -482,6 +577,11 @@ static uint8_t _SM_stateWaiting(void)
     uint16_t tempMin = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_MIN);
 
     _SM_checkSensors();
+
+    if (g_error != _ERROR_NO)
+    {
+        return _RESULT_ERROR;
+    }
 
     if (g_temperature < tempMin)
     {
@@ -506,3 +606,12 @@ static uint8_t _SM_stateSnail(void)
 
     return _RESULT_REPEATE;
 }
+
+/*
+ISR(TIMER0_COMPA_vect)
+{
+    double sensor = ds18b20_gettemp();
+    UART_writeIntegerString((int)sensor);
+    UART_writeString("\n");
+}
+*/

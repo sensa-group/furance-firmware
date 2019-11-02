@@ -31,5 +31,6 @@
 #define SYSTEM_MIN(a, b) ( a < b ? a : b)
 
 #define SYSTEM_MAP(x, inMin, inMax, outMin, outMax) ((x - inMin) * (outMax - outMin) / (inMax - inMin) + outMin)
+//#define SYSTEM_MAP(input, input_start, input_end, output_start, output_end) (output_start + ((output_end - output_start) / (input_end - input_start)) * (input - input_start))
 
 #endif // _SYSTEM_H_

@@ -11,6 +11,8 @@
 
 #include <avr/eeprom.h>
 
+#include "driver/uart.h"
+
 uint16_t EEPROM_readWord(uint16_t addr)
 {
     return eeprom_read_word((uint16_t *)addr);

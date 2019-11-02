@@ -365,6 +365,19 @@ void MENU_refreshSensorValue(uint16_t temperature, uint16_t flame)
     DISPLAY_showString("C");
 }
 
+void MENU_refreshError(const char *str1, const char *str2)
+{
+    DISPLAY_gotoXY(0, 2);
+    DISPLAY_showString("        ");
+    DISPLAY_gotoXY(0, 2);
+    DISPLAY_showString(str1);
+
+    DISPLAY_gotoXY(0, 3);
+    DISPLAY_showString("        ");
+    DISPLAY_gotoXY(0, 3);
+    DISPLAY_showString(str2);
+}
+
 void MENU_refresh(void)
 {
     switch (g_refreshDisplay)

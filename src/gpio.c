@@ -13,6 +13,7 @@
 
 #include "driver/pcf8574.h"
 #include "driver/uart.h"
+#include "driver/pwm.h"
 
 void GPIO_init(void)
 {
@@ -27,12 +28,14 @@ void GPIO_init(void)
 
 void GPIO_buzzerOn(void) 
 {
-    GPIO_BUZZER_PORT |= (1 << GPIO_BUZZER_PIN);
+    //GPIO_BUZZER_PORT |= (1 << GPIO_BUZZER_PIN);
+    PWM2_setFrequency(2);
 }
 
 void GPIO_buzzerOff(void) 
 {
-    GPIO_BUZZER_PORT &= ~(1 << GPIO_BUZZER_PIN);
+    //GPIO_BUZZER_PORT &= ~(1 << GPIO_BUZZER_PIN);
+    PWM2_setFrequency(0);
 }
 
 uint8_t GPIO_switchRead(uint8_t switch_num) 
