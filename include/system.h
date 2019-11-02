@@ -27,4 +27,9 @@
 //#define SCL_CLOCK 100000L
 #define SCL_CLOCK 10000L
 
+#define SYSTEM_MAX(a, b) ( a > b ? a : b)
+#define SYSTEM_MIN(a, b) ( a < b ? a : b)
+
+#define SYSTEM_MAP(x, inMin, inMax, outMin, outMax) ((x - inMin) * (outMax - outMin) / (inMax - inMin) + outMin)
+
 #endif // _SYSTEM_H_

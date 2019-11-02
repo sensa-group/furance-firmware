@@ -11,6 +11,7 @@
 #include <avr/io.h>
 #include <util/delay.h>
 
+/*
 #include "driver/uart.h"
 #include "driver/pwm.h"
 #include "driver/pcf8574.h"
@@ -21,6 +22,8 @@
 #include "display.h"
 #include "gpio.h"
 #include "menu.h"
+*/
+#include "statemachine.h"
 
 int main(void)
 {
@@ -110,9 +113,9 @@ int main(void)
     while (1);
     */
 
-    UART_init();
+    //UART_init();
 
-    pcf8574_init();
+    //pcf8574_init();
 
     /*
     ADC_init();
@@ -154,7 +157,7 @@ int main(void)
     }
     */
 
-    DISPLAY_init();
+    //DISPLAY_init();
 
     /*
     DISPLAY_showString("ZI JE CAR");
@@ -166,7 +169,13 @@ int main(void)
     DISPLAY_showString(":D");
     */
 
-    MENU_init();
+    //MENU_init();
+
+    /*
+    PWM0_init();
+    PWM1_init();
+    PWM2_init();
+    */
 
     /*
     uint8_t g_encALastState = (PINB >> PB4) & 0x01;
@@ -215,7 +224,7 @@ int main(void)
     }
     */
 
-    while (1);
+    //while (1);
 
     /*
     ONEWIRE_init();
@@ -257,7 +266,7 @@ int main(void)
 
     //
 
-    while (1);
+    //while (1);
 
     //while (1);
 
@@ -292,7 +301,11 @@ int main(void)
     }
     */
 
-    while (1);
+    SM_init();
+
+    SM_exec();
+
+    while (1);                              // Just in case :D
 
     return 0;
 }

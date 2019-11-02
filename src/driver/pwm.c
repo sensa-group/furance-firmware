@@ -12,14 +12,24 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
+#include "driver/ds18b20.h"
+#include "driver/adc.h"
+#include "driver/uart.h"
+#include "menu.h"
+
 static uint32_t _frequency;
 static uint32_t _tick;
 
 static uint32_t _frequency2;
 static uint32_t _tick2;
 
+static volatile double _temperatureSensorValue;
+static volatile uint8_t _flameSensorValue;
+
 void _isr1(void);
 void _isr2(void);
+void _readSensors(void);
+void _refreshMenu(void);
 
 void PWM0_init(void)
 {
@@ -112,8 +122,32 @@ void PWM2_setFrequency(uint32_t frequency)
 
 ISR(TIMER1_COMPA_vect)
 {
+    //_readSensors();
+    //_refreshMenu();
     _isr1();
     _isr2();
+}
+
+void _readSensors(void)
+{
+    _temperatureSensorValue;
+    _flameSensorValue;
+
+    double temperatureValue = ds18b20_gettemp();
+    uint8_t flameValue = ADC_read(0x07);
+
+    if (_temperatureSensorValue != temperatureValue || _flameSensorValue != flameValue)
+    {
+        MENU_refreshSensorValue((uint16_t)temperatureValue, (uint16_t)flameValue);
+    }
+
+    _temperatureSensorValue = temperatureValue;
+    _flameSensorValue = flameValue;
+}
+
+void _refreshMenu(void)
+{
+    //MENU_refresh();
 }
 
 void _isr1(void)

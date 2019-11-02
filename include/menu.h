@@ -9,15 +9,9 @@
 #ifndef MENU_H
 #define	MENU_H
 
-#ifdef	__cplusplus
-extern "C" {
-#endif
+#include <stdint.h>
 
 void MENU_init(void);
+void MENU_refreshSensorValue(uint16_t temperature, uint16_t flame);
 
-
-#ifdef	__cplusplus
-}
-#endif
-
-#endif	/* MENU_H */
+#endif /* MENU_H */

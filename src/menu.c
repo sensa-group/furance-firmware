@@ -14,8 +14,9 @@
 #include <util/delay.h>
 
 #include "driver/uart.h"
-#include "display.h"
 #include "driver/eeprom.h"
+#include "display.h"
+#include "statemachine.h"
 
 typedef void (*ptrStateFunction)(void);
 
@@ -112,6 +113,12 @@ typedef void (*ptrStateFunction)(void);
 #define _TYPE_OPTION                     2
 #define _TYPE_ACTION                     3
 
+#define _REFRESH_DISPLAY_NO              0
+#define _REFRESH_DISPLAY_INIT            1
+#define _REFRESH_DISPLAY_MENU            2
+#define _REFRESH_DISPLAY_OPTION_1        3
+#define _REFRESH_DISPLAY_OPTION_2        4
+
 typedef struct
 {
     uint8_t id;
@@ -124,14 +131,6 @@ typedef struct
     uint16_t valueMax;
     ptrStateFunction callback;
 } state_t;
-
-void SM_startStop()
-{
-}
-
-void SM_snailStartStop()
-{
-}
 
 const char *g_text[] = {
     "",                                     // _STATE_NO_MENU
@@ -172,7 +171,7 @@ const char *g_text[] = {
     "Dozator on",                           // _STATE_STAB_DISPENSER_ON
     "Dozator of",                           // _STATE_STAB_DISPENSER_OFF
     "Vreme V",                              // _STATE_STAB_FAN_S
-    "Ukupno vr",                            // _STATE_STAB_TOTAL_T
+    "Broj pon.",                            // _STATE_STAB_TOTAL_T
     "Izlaz",                                // _STATE_STAB_EX
 
     "Dozator on",                           // _STATE_STAB_DISPENSER_ON_O
@@ -306,23 +305,19 @@ static uint8_t g_encBLastState;
 
 static uint16_t g_optionValue;
 
+static volatile uint8_t g_refreshDisplay;
+
 static void _handleClick(void);
 static void _handleNext(void);
 static void _handlePrev(void);
 
 static void _showMenuItem(const char *str1, const char *str2, const char *str3);
-static void _showMenuOption(uint16_t tmp);
+static void _showMenuOption(uint16_t value);
 
 void MENU_init(void)
 {
     cli();
     DDRB &= ~(1 << PB4) | ~(1 << PB5) | ~(1 << PB6);
-    //SYSTEM_IN_PULLUP(SYSTEM_PORTC, 4);
-    //SYSTEM_IN_PULLUP(SYSTEM_PORTC, 5);
-    //SYSTEM_IN_PULLUP(SYSTEM_PORTC, 6);
-    //SYSTEM_IN_PULLDOWN(SYSTEM_PORTC, 4);
-    //SYSTEM_IN_PULLDOWN(SYSTEM_PORTC, 5);
-    //SYSTEM_IN_PULLDOWN(SYSTEM_PORTC, 6);
     PCICR |= (1 << PCIE0);
     //PCMSK0 |= (1 << PCINT4) | (1 << PCINT5) | (1 << PCINT6);
     PCMSK0 |= (1 << PCINT4) | (1 << PCINT6);
@@ -347,7 +342,90 @@ void MENU_init(void)
     DISPLAY_gotoXY(9, 2);
     DISPLAY_showString(">");
 
+    //g_refreshDisplay = _REFRESH_DISPLAY_INIT;
     _showMenuItem(g_text[g_currentState], g_text[g_states[g_currentState].nextStateId], 0);
+}
+
+void MENU_refreshSensorValue(uint16_t temperature, uint16_t flame)
+{
+    uint16_t flameMin = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
+
+    DISPLAY_gotoXY(0, 0);
+    DISPLAY_showString("        ");
+    DISPLAY_gotoXY(0, 0);
+    DISPLAY_showString("S:");
+    DISPLAY_showInteger(flameMin);
+    DISPLAY_showString("/");
+    DISPLAY_showInteger(flame);
+    DISPLAY_gotoXY(0, 1);
+    DISPLAY_showString("        ");
+    DISPLAY_gotoXY(0, 1);
+    DISPLAY_showString("T:");
+    DISPLAY_showInteger(temperature);
+    DISPLAY_showString("C");
+}
+
+void MENU_refresh(void)
+{
+    switch (g_refreshDisplay)
+    {
+        case _REFRESH_DISPLAY_INIT:
+            DISPLAY_init();
+            DISPLAY_gotoXY(0, 0);
+            DISPLAY_showString("        |");
+            DISPLAY_gotoXY(0, 1);
+            DISPLAY_showString("        |");
+            DISPLAY_gotoXY(0, 2);
+            DISPLAY_showString("        |");
+            DISPLAY_gotoXY(0, 3);
+            DISPLAY_showString("16.10.19|");
+
+            DISPLAY_gotoXY(12, 0);
+            DISPLAY_showString("MENI:");
+            DISPLAY_gotoXY(9, 2);
+            DISPLAY_showString(">");
+
+            _showMenuItem(g_text[g_currentState], g_text[g_states[g_currentState].nextStateId], 0);
+            break;
+        case _REFRESH_DISPLAY_MENU:
+            do
+            {
+                const char *str1 = g_text[g_currentState];
+                const char *str2 = 0;
+                const char *str3 = 0;
+
+                if (g_currentState != g_states[g_currentState].nextStateId && g_states[g_currentState].nextStateId != 0)
+                {
+                    str2 = g_text[g_states[g_currentState].nextStateId];
+                }
+            
+                if (g_currentState != g_states[g_currentState].prevStateId && g_states[g_currentState].prevStateId != 0)
+                {
+                    str3 = g_text[g_states[g_currentState].prevStateId];
+                }
+
+                _showMenuItem(str1, str2, str3);
+            } while (0);
+            break;
+        case _REFRESH_DISPLAY_OPTION_1:
+            _showMenuItem(g_text[g_currentState], 0, 0);
+            g_optionValue = EEPROM_readWord(g_states[g_currentState].eepromRegister);
+            if (g_optionValue < g_states[g_currentState].valueMin)
+            {
+                g_optionValue = g_states[g_currentState].valueMin;
+            }
+            else if (g_optionValue > g_states[g_currentState].valueMax)
+            {
+                g_optionValue = g_states[g_currentState].valueMax;
+            }
+            _showMenuOption(g_optionValue);
+            break;
+        case _REFRESH_DISPLAY_OPTION_2:
+            _showMenuOption(g_optionValue);
+            break;
+    }
+
+    g_refreshDisplay = _REFRESH_DISPLAY_NO;
 }
 
 static void _handleClick(void)
@@ -360,7 +438,17 @@ static void _handleClick(void)
         {
             _showMenuItem(g_text[g_currentState], 0, 0);
             g_optionValue = EEPROM_readWord(g_states[g_currentState].eepromRegister);
+            if (g_optionValue < g_states[g_currentState].valueMin)
+            {
+                g_optionValue = g_states[g_currentState].valueMin;
+            }
+            else if (g_optionValue > g_states[g_currentState].valueMax)
+            {
+                g_optionValue = g_states[g_currentState].valueMax;
+            }
             _showMenuOption(g_optionValue);
+
+            //g_refreshDisplay = _REFRESH_DISPLAY_OPTION_1;
         }
         else
         {
@@ -378,10 +466,13 @@ static void _handleClick(void)
                 str3 = g_text[g_states[g_currentState].prevStateId];
             }
             _showMenuItem(str1, str2, str3);
+
+            //g_refreshDisplay = _REFRESH_DISPLAY_OPTION_2;
         }
         break;
     case _TYPE_OPTION:
         EEPROM_writeWord(g_states[g_currentState].eepromRegister, g_optionValue);
+
         g_currentState = g_states[g_currentState].clickStateId;
 
         const char *str1 = g_text[g_currentState];
@@ -398,6 +489,8 @@ static void _handleClick(void)
             str3 = g_text[g_states[g_currentState].prevStateId];
         }
         _showMenuItem(str1, str2, str3);
+
+        //g_refreshDisplay = _REFRESH_DISPLAY_MENU;
         break;
     case _TYPE_ACTION:
         if (g_states[g_currentState].callback)
@@ -430,6 +523,8 @@ static void _handleNext(void)
                 str3 = g_text[g_states[g_currentState].prevStateId];
             }
             _showMenuItem(str1, str2, str3);
+
+            //g_refreshDisplay = _REFRESH_DISPLAY_MENU;
         }
     }
     else
@@ -438,6 +533,7 @@ static void _handleNext(void)
         {
             g_optionValue++;
             _showMenuOption(g_optionValue);
+            //g_refreshDisplay = _REFRESH_DISPLAY_OPTION_2;
         }
     }
 }
@@ -464,6 +560,8 @@ static void _handlePrev(void)
                 str3 = g_text[g_states[g_currentState].prevStateId];
             }
             _showMenuItem(str1, str2, str3);
+
+            //g_refreshDisplay = _REFRESH_DISPLAY_MENU;
         }
     }
     else
@@ -472,6 +570,7 @@ static void _handlePrev(void)
         {
             g_optionValue--;
             _showMenuOption(g_optionValue);
+            //g_refreshDisplay = _REFRESH_DISPLAY_OPTION_2;
         }
     }
 }
@@ -498,8 +597,12 @@ static void _showMenuItem(const char *str1, const char *str2, const char *str3)
     }
 }
 
-static void _showMenuOption(uint16_t tmp)
+static void _showMenuOption(uint16_t value)
 {
+    DISPLAY_gotoXY(10, 3);
+    DISPLAY_showString("          ");
+    DISPLAY_gotoXY(10, 3);
+    DISPLAY_showInteger(value);
 }
 
 ISR(PCINT0_vect)
@@ -520,7 +623,6 @@ ISR(PCINT0_vect)
 
     if (btnCurrentState && !g_btnLastState)
     {
-        UART_writeString("CLICK\n");
         _handleClick();
     }
 
@@ -538,12 +640,10 @@ ISR(PCINT0_vect)
 
     if (side > 0)
     {
-        UART_writeString("NEXT\n");
         _handleNext();
     }
     else if (side < 0)
     {
-        UART_writeString("PREV\n");
         _handlePrev();
     }
 
