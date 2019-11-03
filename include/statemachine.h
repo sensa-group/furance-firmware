@@ -22,7 +22,4 @@ void SM_snailStop(void);
 void SM_startStop(void);
 void SM_snailStartStop(void);
 
-void SM_showMenuItem(const char *description, const char *description2);
-void SM_showMenuOption(uint16_t value);
-
 #endif // _STATEMACHINE_H_

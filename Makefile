@@ -7,7 +7,7 @@ PROJECTNAME := pecka
 
 CC = avr-gcc
 #CCFLAGS = -mmcu=atmega328p
-CCFLAGS = -mmcu=atmega32u4 -O2 -Wall
+CCFLAGS = -mmcu=atmega32u4 -O2 -Wall 
 #CCFLAGS = -mmcu=atmega2560
 MKDIR_P = mkdir -p
 
@@ -26,7 +26,7 @@ OBJS := $(patsubst $(SRCDIR)/%.c, $(BINDIR)/%.o, $(SRCS))
 all: directories program
 
 program: $(OBJS)
-	$(CC) $(CCFLAGS) -o $(BINDIR)/$(PROJECTNAME).elf $^ $(LIBS)
+	$(CC) $(CCFLAGS) -o $(BINDIR)/$(PROJECTNAME).elf $^ $(LIBS) 
 
 directories:
 	$(shell mkdir -p $(OUTDIR))

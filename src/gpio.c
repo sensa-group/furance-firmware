@@ -24,6 +24,8 @@ void GPIO_init(void)
     // buzzer
     GPIO_BUZZER_DDR |= (1 << GPIO_BUZZER_PIN);
     GPIO_BUZZER_PORT &= ~(1 << GPIO_BUZZER_PIN);
+
+    GPIO_relayOff(GPIO_RELAY_HEATER);
 }
 
 void GPIO_buzzerOn(void) 

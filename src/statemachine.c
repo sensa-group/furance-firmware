@@ -55,7 +55,6 @@ typedef struct
     ptrStateFunction callback;
 } state_t;
 
-static void _SM_refreshDisplay(void);
 static void _SM_checkSensors(void);
 static void _SM_checkError(void);
 
@@ -70,7 +69,7 @@ static uint8_t _SM_stateCritical(void);
 
 static state_t g_states[] = {
 //    Current state         Success state           Repeate state           Error state             Critical state          Callback
-    { _STATE_STOPPED,       _STATE_STARTING,        _STATE_STOPPED,         _STATE_SNAIL,           _STATE_CRITICAL,        _SM_stateStopped },
+    { _STATE_STOPPED,       _STATE_WAITING,         _STATE_STOPPED,         _STATE_SNAIL,           _STATE_CRITICAL,        _SM_stateStopped },
     { _STATE_STARTING,      _STATE_STABILISATION,   _STATE_STARTING,        _STATE_STOPPING,        _STATE_CRITICAL,        _SM_stateStarting },
     { _STATE_STABILISATION, _STATE_RUNNING,         _STATE_STABILISATION,   _STATE_STOPPING,        _STATE_CRITICAL,        _SM_stateStabilisation },
     { _STATE_RUNNING,       _STATE_STOPPING,        _STATE_RUNNING,         _STATE_STOPPING,        _STATE_CRITICAL,        _SM_stateRunning },
@@ -132,12 +131,12 @@ void SM_init(void)
 
     if (EEPROM_readWord(EEPROM_ADDR_SYSTEM_RUNNING))
     {
-        uint16_t minTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_MIN);
+        //uint16_t minTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_MIN);
         uint16_t maxTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_MAX);
-        uint16_t criticalTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
-        uint16_t startTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
+        //uint16_t criticalTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
+        //uint16_t startTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
         uint16_t flameMin = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
-        uint16_t flameMax = EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_MAX);
+        //uint16_t flameMax = EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_MAX);
 
         double currentTemp = ds18b20_gettemp();
         uint16_t flame = ADC_read(0b111);
@@ -159,15 +158,16 @@ void SM_init(void)
             g_currentState = _STATE_WAITING;
         }
 
-
         g_currentState = _STATE_WAITING;
     }
+
+    UART_writeString("SM: Initialized\n");
 }
 
 void SM_exec(void)
 {
     uint8_t result;
-    uint8_t lastState;
+    //uint8_t lastState;
 
     while (1)
     {
@@ -206,23 +206,56 @@ void SM_exec(void)
         }
         */
 
+        if (g_error == _ERROR_NO)
+        {
+            UART_writeString("State: ");
+            UART_writeIntegerString(g_currentState);
+            UART_writeString("\n");
+            cli();
+            switch (g_currentState)
+            {
+                case _STATE_STOPPED:
+                    MENU_refreshError("STOP", "");
+                    break;
+                case _STATE_STARTING:
+                    MENU_refreshError("POTPALA", "");
+                    break;
+                case _STATE_STABILISATION:
+                    MENU_refreshError("STAB.", "");
+                    break;
+                case _STATE_RUNNING:
+                    MENU_refreshError("RAD", "");
+                    break;
+                case _STATE_STOPPING:
+                    MENU_refreshError("GASENJE", "");
+                    break;
+                case _STATE_WAITING:
+                    MENU_refreshError("CEKANJE", "");
+                    break;
+                default:
+                    MENU_refreshError("", "");
+                    break;
+            }
+            sei();
+        }
+        
         result = g_states[g_currentState].callback();
-        lastState = g_currentState;
+        //lastState = g_currentState;
 
         switch (result)
         {
-        case _RESULT_SUCCESS:
-            g_currentState = g_states[g_currentState].successStateId;
-            break;
-        case _RESULT_REPEATE:
-            g_currentState = g_states[g_currentState].repeateStateId;
-            break;
-        case _RESULT_ERROR:
-            g_currentState = g_states[g_currentState].errorStateId;
-            break;
-        case _RESULT_CRITICAL:
-            g_currentState = g_states[g_currentState].criticalStateId;
-            break;
+            case _RESULT_SUCCESS:
+                g_currentState = g_states[g_currentState].successStateId;
+                break;
+            case _RESULT_REPEATE:
+                g_currentState = g_states[g_currentState].repeateStateId;
+                break;
+            case _RESULT_ERROR:
+                g_currentState = g_states[g_currentState].errorStateId;
+                break;
+            case _RESULT_CRITICAL:
+                g_currentState = g_states[g_currentState].criticalStateId;
+                break;
         }
 
         /*
@@ -238,11 +271,13 @@ void SM_exec(void)
 void SM_start(void)
 {
     EEPROM_writeWord(EEPROM_ADDR_SYSTEM_RUNNING, 1);
+    g_error = _ERROR_NO;
 }
 
 void SM_stop(void)
 {
     EEPROM_writeWord(EEPROM_ADDR_SYSTEM_RUNNING, 0);
+    g_error = _ERROR_NO;
 }
 
 void SM_snailStart(void)
@@ -284,34 +319,46 @@ void SM_snailStartStop(void)
     }
 }
 
-void SM_showMenuItem(const char *description, const char *description2)
-{
-}
-
-void SM_showMenuOption(uint16_t value)
-{
-}
-
-static void _SM_refreshDisplay(void)
-{
-}
-
 static void _SM_checkSensors(void)
 {
-    uint16_t flame;
+    uint16_t temperatureCritical = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
+    uint16_t temperatureStart = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_START);
+    uint16_t flame = ADC_read(0b111);
     double temperature = ds18b20_gettemp();
     //= ADC_read(0b111);
 
+    if (g_error != _ERROR_TEMPERATURE_CRITICAL)
+    {
+        g_error = _ERROR_NO;
+    }
+
     uint8_t i = 0;
+    uint8_t tmpError = _ERROR_NO;
     while (((uint16_t)temperature) == 0)
     {
         temperature = ds18b20_gettemp();
         if (i > 3)
         {
-            g_error = _ERROR_TEMPERATURE_DISCONNECTED;
+            tmpError = _ERROR_TEMPERATURE_DISCONNECTED;
             break;
         }
     }
+
+    if (g_error == _ERROR_TEMPERATURE_CRITICAL)
+    {
+        if (tmpError != _ERROR_TEMPERATURE_DISCONNECTED)
+        {
+            if (temperature < temperatureStart)
+            {
+                //g_error = _ERROR_NO;
+            }
+        }
+    }
+    else
+    {
+        g_error = _ERROR_NO;
+    }
+
     i = 0;
     double flame2 = 0;
     for (i = 0; i < 10; i++)
@@ -321,18 +368,26 @@ static void _SM_checkSensors(void)
     flame2 /= 10.0;
     flame = (uint16_t)flame2;
 
+    if (temperature > temperatureCritical)
+    {
+        if (g_error != _ERROR_TEMPERATURE_CRITICAL)
+        {
+            g_error = _ERROR_TEMPERATURE_CRITICAL;
+        }
+    }
+
     /*
     UART_writeString("R: ");
     UART_writeIntegerString(flame);
     UART_writeString("\n");
     */
 
-    g_error = _ERROR_NO;
-
+    /*
     if (flame == 1023)
     {
         g_error = _ERROR_FLAME_DISCONNECTED;
     }
+    */
 
     //flame = SYSTEM_MAP(flame, 1020, 100, 0, 100);
     //flame = 100 - SYSTEM_MAP(flame, 100, 1023, 0, 100);
@@ -352,7 +407,6 @@ static void _SM_checkSensors(void)
         MENU_refreshSensorValue((uint16_t)temperature, (uint16_t)flame);
         sei();
     }
-
 
     g_flame = flame;
     g_temperature = temperature;
@@ -393,9 +447,15 @@ static uint8_t _SM_stateStopped(void)
 {
     _SM_checkSensors();
 
+    TIME_reset();
+
     if (g_error == _ERROR_TEMPERATURE_CRITICAL)
     {
-        return _RESULT_CRITICAL;
+        uint16_t startTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_START);
+        if (g_temperature >= startTemp)
+        {
+            return _RESULT_CRITICAL;
+        }
     }
 
     if (g_snailRunning)
@@ -409,8 +469,6 @@ static uint8_t _SM_stateStopped(void)
         return _RESULT_SUCCESS;
     }
 
-    _delay_ms(10);
-
     return _RESULT_REPEATE;
 }
 
@@ -419,86 +477,123 @@ static uint8_t _SM_stateStarting(void)
     uint8_t fan1Speed = SYSTEM_MAP((uint8_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN_SPEED), 0, 100, 1, 20);
     uint16_t fan1Time = EEPROM_readWord(EEPROM_ADDR_STARTING_FAN_TIME) * 1000;
     uint16_t dispenserTime = EEPROM_readWord(EEPROM_ADDR_STARTING_DISPENSER_TIME) * 1000;
-    uint16_t heaterTime = EEPROM_readWord(EEPROM_ADDR_STARTING_HEATER_TIME) * 1000;
-    uint8_t fan2Speed = SYSTEM_MAP((uint8_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN2_SPEED), 0, 100, 1, 20);;
+    uint32_t heaterTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_HEATER_TIME) * 1000;
+    uint8_t fan2Speed = SYSTEM_MAP((uint8_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN2_SPEED), 0, 100, 1, 20);
     uint16_t fan2WaitingTime = EEPROM_readWord(EEPROM_ADDR_STARTING_FAN2_WAITING_TIME) * 1000;
-    uint16_t flameMin = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
-    uint8_t flameTime = (uint8_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_TIME) * 1000;
+    uint16_t flameMin = EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_MAX);
+    uint16_t flameTime = (uint16_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_TIME) * 1000;
 
     uint8_t fanStarted = 0;
+    uint32_t flameStartTime = 0;
 
-    uint16_t time;
-    uint16_t flameStartTime = 0;
+    uint32_t startTime = TIME_milis();
+    uint32_t currentTime = TIME_milis();
 
+    UART_writeString("STARTING: Fan started\n");
     PWM1_setFrequency(fan1Speed);
-    time = 0;
-    while (time < fan1Time)
+    while (currentTime - startTime < fan1Time)
     {
+        //UART_writeString("STARTING: Fan 01\n");
         _SM_checkSensors();
-        _delay_ms(10);
-        time += 10;
+        //UART_writeString("STARTING: Fan 02\n");
+        //_delay_ms(10);
+        //UART_writeString("STARTING: Fan 03\n");
+        //UART_writeString("STARTING: Fan 04\n");
 
+        currentTime = TIME_milis();
         
         if (g_error == _ERROR_TEMPERATURE_CRITICAL)
         {
+            UART_writeString("STARTING: Teperature critical\n");
             return _RESULT_CRITICAL;
+        }
+
+        if (!EEPROM_readWord(EEPROM_ADDR_SYSTEM_RUNNING))
+        {
+            return _RESULT_ERROR;
         }
     }
     PWM1_setFrequency(0);
+    UART_writeString("STARTING: Fan stopped\n");
 
     PWM0_setDutyCycle(255);
-    time = 0;
-    while (time < dispenserTime)
+    UART_writeString("STARTING: Dispenser started\n");
+    startTime = TIME_milis();
+    currentTime = TIME_milis();
+    while (currentTime - startTime < dispenserTime)
     {
         _SM_checkSensors();
-        _delay_ms(10);
-        time += 10;
+
+        currentTime = TIME_milis();
 
         if (g_error == _ERROR_TEMPERATURE_CRITICAL)
         {
             return _RESULT_CRITICAL;
         }
+
+        if (!EEPROM_readWord(EEPROM_ADDR_SYSTEM_RUNNING))
+        {
+            return _RESULT_ERROR;
+        }
     }
     PWM0_setDutyCycle(0);
+    UART_writeString("STARTING: Dispenser started\n");
 
     GPIO_relayOn(GPIO_RELAY_HEATER);
-    time = 0;
-    while (time < heaterTime)
+    UART_writeString("STARTING: Heater started\n");
+    startTime = TIME_milis();
+    currentTime = TIME_milis();
+    while (currentTime - startTime < heaterTime)
     {
-        if (time >= fan2WaitingTime && !fanStarted)
-        {
-            PWM1_setFrequency(fan2Speed);
-            fanStarted = 1;
-
-            if (g_error == _ERROR_TEMPERATURE_CRITICAL)
-            {
-                return _RESULT_CRITICAL;
-            }
-        }
-
         _SM_checkSensors();
 
-        if (g_flame > flameMin && !flameStartTime)
+        currentTime = TIME_milis();
+
+        if (g_error == _ERROR_TEMPERATURE_CRITICAL)
         {
-            flameStartTime = time;
+            UART_writeString("STARTING: Critical\n");
+            return _RESULT_CRITICAL;
+        }
+
+        if (!EEPROM_readWord(EEPROM_ADDR_SYSTEM_RUNNING))
+        {
+            return _RESULT_ERROR;
+        }
+
+        if (currentTime - startTime >= fan2WaitingTime && !fanStarted)
+        {
+            UART_writeString("STARTING: Fan started\n");
+            PWM1_setFrequency(fan2Speed);
+            fanStarted = 1;
+        }
+
+        if (g_flame > flameMin)
+        {
+            if (!flameStartTime)
+            {
+                UART_writeString("STARTING: Flame detected\n");
+                flameStartTime = currentTime;
+            }
         }
         else
         {
+            UART_writeString("STARTING: Flame not detected\n");
             flameStartTime = 0;
         }
 
-        if (time - flameStartTime > flameTime)
+        if (flameStartTime && currentTime - flameStartTime > flameTime)
         {
             PWM1_setFrequency(0);
             GPIO_relayOff(GPIO_RELAY_HEATER);
+            UART_writeString("STARTING: Heater stopped\n");
+            UART_writeString("STARTING: Fan started\n");
+            UART_writeString("STARTING: Success\n");
             return _RESULT_SUCCESS;
         }
-
-        _delay_ms(10);
-        time += 10;
     }
     PWM1_setFrequency(0);
     GPIO_relayOff(GPIO_RELAY_HEATER);
+    UART_writeString("STARTING: Error\n");
 
     return _RESULT_ERROR;
 }
@@ -510,37 +605,53 @@ static uint8_t _SM_stateStabilisation(void)
     uint16_t timeDispenserOn = EEPROM_readWord(EEPROM_ADDR_STABILISATION_DISPENSER_TIME_ON) * 1000;
     uint16_t timeDispenserOff = EEPROM_readWord(EEPROM_ADDR_STABILISATION_DISPENSER_TIME_OFF) * 1000;
 
-    uint16_t time;
+    uint32_t startTime = TIME_milis();
+    uint32_t currentTime = TIME_milis();
 
     PWM1_setFrequency(fanSpeed);
 
     for (uint16_t i = 0; i < stabilisationTime; i++)
     {
-        GPIO_relayOn(GPIO_RELAY_HEATER);
-        time = 0;
-        while (time < timeDispenserOn)
+        PWM0_setDutyCycle(255);
+        startTime = TIME_milis();
+        currentTime = TIME_milis();
+        while (currentTime - startTime < timeDispenserOn)
         {
             _SM_checkSensors();
-            _delay_ms(10);
-            time += 10;
+
+            currentTime = TIME_milis();
 
             if (g_error == _ERROR_TEMPERATURE_CRITICAL)
             {
+                GPIO_relayOff(GPIO_RELAY_HEATER);
+                PWM1_setFrequency(0);
                 return _RESULT_CRITICAL;
             }
-        }
-        GPIO_relayOff(GPIO_RELAY_HEATER);
 
-        time = 0;
-        while (time < timeDispenserOff)
+            if (EEPROM_readWord(EEPROM_ADDR_SYSTEM_RUNNING))
+            {
+                return _RESULT_ERROR;
+            }
+        }
+        PWM0_setDutyCycle(0);
+
+        startTime = TIME_milis();
+        currentTime = TIME_milis();
+        while (currentTime - startTime < timeDispenserOff)
         {
             _SM_checkSensors();
-            _delay_ms(10);
-            time += 10;
+
+            currentTime = TIME_milis();
 
             if (g_error == _ERROR_TEMPERATURE_CRITICAL)
             {
+                PWM1_setFrequency(0);
                 return _RESULT_CRITICAL;
+            }
+
+            if (!EEPROM_readWord(EEPROM_ADDR_SYSTEM_RUNNING))
+            {
+                return _RESULT_ERROR;
             }
         }
     }
@@ -556,69 +667,129 @@ static uint8_t _SM_stateRunning(void)
     uint16_t timeDispenserOn = EEPROM_readWord(EEPROM_ADDR_RUNNING_DISPENSER_TIME_ON) * 1000;
     uint16_t timeDispenserOff = EEPROM_readWord(EEPROM_ADDR_RUNNING_DISPENSER_TIME_OFF) * 1000;
     uint16_t maxTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_MAX);
-    uint16_t criticalTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
+    uint16_t flameMax = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
+    uint16_t flameTime = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_TIME) * 1000;
+    //uint16_t criticalTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
 
-    uint16_t time;
+    uint32_t flameStartTime = 0;
+
+    uint32_t startTime = TIME_milis();
+    uint32_t currentTime = TIME_milis();
 
     PWM1_setFrequency(fanSpeed);
 
     while (1)
     {
-        GPIO_relayOn(GPIO_RELAY_HEATER);
-        time = 0;
-        while (time < timeDispenserOn)
+        PWM0_setDutyCycle(255);
+        startTime = TIME_milis();
+        currentTime = TIME_milis();
+        UART_writeString("RUN: Dispenser started\n");
+        while (currentTime - startTime < timeDispenserOn)
         {
             _SM_checkSensors();
 
+            currentTime = TIME_milis();
+
+            if (g_flame < flameMax)
+            {
+                if (!flameStartTime)
+                {
+                    UART_writeString("RUN: Flame detected\n");
+                    flameStartTime = currentTime;
+                }
+            }
+            else
+            {
+                UART_writeString("RUN: Flame not detected\n");
+                flameStartTime = 0;
+            }
+
+            if (!EEPROM_readWord(EEPROM_ADDR_SYSTEM_RUNNING))
+            {
+                return _RESULT_ERROR;
+            }
+
+            if (flameStartTime && currentTime - flameStartTime > flameTime)
+            {
+                PWM1_setFrequency(0);
+                PWM0_setDutyCycle(0);
+                UART_writeString("RUN: Heater stopped\n");
+                UART_writeString("RUN: Fan started\n");
+                UART_writeString("RUN: Error\n");
+                return _RESULT_ERROR;
+            }
+
             if (g_error == _ERROR_TEMPERATURE_CRITICAL)
             {
+                PWM0_setDutyCycle(0);
+                PWM1_setFrequency(0);
+                UART_writeString("RUN: Critical\n");
                 return _RESULT_CRITICAL;
             }
 
             if (g_temperature >= maxTemp)
             {
-                GPIO_relayOff(GPIO_RELAY_HEATER);
+                PWM0_setDutyCycle(0);
                 PWM1_setFrequency(0);
+                UART_writeString("RUN: Max temp\n");
                 return _RESULT_SUCCESS;
             }
-            if (g_temperature >= criticalTemp)
-            {
-                GPIO_relayOff(GPIO_RELAY_HEATER);
-                PWM1_setFrequency(0);
-                return _RESULT_CRITICAL;
-            }
-
-            _delay_ms(10);
-            time += 10;
         }
-        GPIO_relayOff(GPIO_RELAY_HEATER);
+        PWM0_setDutyCycle(0);
+        UART_writeString("RUN: Dispenser stopped\n");
 
-        time = 0;
-        while (time < timeDispenserOff)
+        startTime = TIME_milis();
+        currentTime = TIME_milis();
+        while (currentTime - startTime < timeDispenserOff)
         {
             _SM_checkSensors();
 
+            currentTime = TIME_milis();
+
+            if (g_flame < flameMax)
+            {
+                if (!flameStartTime)
+                {
+                    UART_writeString("RUN: Flame detected\n");
+                    flameStartTime = currentTime;
+                }
+            }
+            else
+            {
+                UART_writeString("RUN: Flame not detected\n");
+                flameStartTime = 0;
+            }
+
+            if (!EEPROM_readWord(EEPROM_ADDR_SYSTEM_RUNNING))
+            {
+                return _RESULT_ERROR;
+            }
+
+            if (flameStartTime && currentTime - flameStartTime > flameTime)
+            {
+                PWM1_setFrequency(0);
+                PWM0_setDutyCycle(0);
+                UART_writeString("RUN: Heater stopped\n");
+                UART_writeString("RUN: Fan started\n");
+                UART_writeString("RUN: Error\n");
+                return _RESULT_ERROR;
+            }
+
             if (g_error == _ERROR_TEMPERATURE_CRITICAL)
             {
+                PWM0_setDutyCycle(0);
+                PWM1_setFrequency(0);
+                UART_writeString("RUN: Critical\n");
                 return _RESULT_CRITICAL;
             }
 
             if (g_temperature >= maxTemp)
             {
-                GPIO_relayOff(GPIO_RELAY_HEATER);
+                PWM0_setDutyCycle(0);
                 PWM1_setFrequency(0);
+                UART_writeString("RUN: Max temp\n");
                 return _RESULT_SUCCESS;
             }
-            if (g_temperature >= criticalTemp)
-            {
-                g_error = _ERROR_TEMPERATURE_CRITICAL;
-                GPIO_relayOff(GPIO_RELAY_HEATER);
-                PWM1_setFrequency(0);
-                return _RESULT_CRITICAL;
-            }
-
-            _delay_ms(10);
-            time += 10;
         }
     }
 
@@ -627,54 +798,66 @@ static uint8_t _SM_stateRunning(void)
 
 static uint8_t _SM_stateStopping(void)
 {
-    int8_t flameTime = EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_TIME) * 1000;
-    uint16_t flameMax = EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_MAX);
+    uint32_t flameTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_TIME) * 1000;
+    uint16_t flameMax = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
     uint8_t fanSpeed = (uint8_t)SYSTEM_MAP(EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_SPEED), 0.0, 100.0, 10.0, 20.0);
-    uint16_t fanTime = EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_TIME) * 1000;
+    uint32_t fanTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_TIME) * 1000;
 
     uint8_t running = 1;
 
-    uint16_t time = 0;
+    uint32_t startTime = TIME_milis();
+    uint32_t currentTime = TIME_milis();
+
+    PWM0_setDutyCycle(0);
+    GPIO_relayOff(GPIO_RELAY_HEATER);
 
     PWM1_setFrequency(fanSpeed);
 
+    startTime = TIME_milis();
+    currentTime = TIME_milis();
+    UART_writeString("STOPPING: Flame stopping\n");
     while (running)
     {
         _SM_checkSensors();
 
+        currentTime = TIME_milis();
+
         if (g_error == _ERROR_TEMPERATURE_CRITICAL)
         {
+            UART_writeString("STOPPING: Critical\n");
             return _RESULT_CRITICAL;
         }
 
         if (g_flame <= flameMax)
         {
-            time += 10;
-            if (time >= flameTime)
+            if (currentTime - startTime >= flameTime)
             {
                 running = 0;
             }
         }
         else
         {
-            time = 0;
+            startTime = currentTime;
         }
-
-        _delay_ms(10);
     }
+    UART_writeString("STOPPING: Flame stopped\n");
 
-    time = 0;
-    while (time < fanTime)
+    startTime = TIME_milis();
+    currentTime = TIME_milis();
+    UART_writeString("STOPPING: Start waiting\n");
+    while (currentTime - startTime < fanTime)
     {
         _SM_checkSensors();
-        _delay_ms(10);
-        time += 10;
+
+        currentTime = TIME_milis();
 
         if (g_error == _ERROR_TEMPERATURE_CRITICAL)
         {
+            UART_writeString("STOPPING: Critical\n");
             return _RESULT_CRITICAL;
         }
     }
+    UART_writeString("STOPPING: Stop waiting\n");
 
     PWM1_setFrequency(0);
     return _RESULT_SUCCESS;
@@ -686,6 +869,8 @@ static uint8_t _SM_stateWaiting(void)
 
     _SM_checkSensors();
 
+    TIME_reset();
+
     if (g_error == _ERROR_TEMPERATURE_CRITICAL)
     {
         return _RESULT_CRITICAL;
@@ -696,12 +881,15 @@ static uint8_t _SM_stateWaiting(void)
         return _RESULT_ERROR;
     }
 
+    if (!EEPROM_readWord(EEPROM_ADDR_SYSTEM_RUNNING))
+    {
+        return _RESULT_ERROR;
+    }
+
     if (g_temperature < tempMin)
     {
         return _RESULT_SUCCESS;
     }
-
-    _delay_ms(10);
 
     return _RESULT_REPEATE;
 }
@@ -721,64 +909,36 @@ static uint8_t _SM_stateSnail(void)
         return _RESULT_SUCCESS;
     }
 
-    _delay_ms(10);
-
     return _RESULT_REPEATE;
 }
 
 static uint8_t _SM_stateCritical(void)
 {
-    int8_t flameTime = EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_TIME) * 1000;
-    uint16_t flameMax = EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_MAX);
     uint8_t fanSpeed = (uint8_t)SYSTEM_MAP(EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_SPEED), 0.0, 100.0, 10.0, 20.0);
-    uint16_t fanTime = EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_TIME) * 1000;
+    uint16_t minTemperature = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_START);
 
-    uint8_t running = 1;
+    EEPROM_writeWord(EEPROM_ADDR_SYSTEM_RUNNING, 0);
 
-    uint16_t time = 0;
+    TIME_reset();
+    
+    PWM0_setDutyCycle(0);
+    GPIO_relayOff(GPIO_RELAY_HEATER);
 
     PWM1_setFrequency(fanSpeed);
 
-    while (running)
+    UART_writeString("CRITICAL: Start waiting\n");
+    while (1)
     {
         _SM_checkSensors();
 
-        if (g_error == _ERROR_TEMPERATURE_CRITICAL)
+        if (g_temperature < minTemperature)
         {
-            return _RESULT_CRITICAL;
-        }
-
-        if (g_flame <= flameMax)
-        {
-            time += 10;
-            if (time >= flameTime)
-            {
-                running = 0;
-            }
-        }
-        else
-        {
-            time = 0;
-        }
-
-        _delay_ms(10);
-    }
-
-    time = 0;
-    while (time < fanTime)
-    {
-        _SM_checkSensors();
-        _delay_ms(10);
-        time += 10;
-
-        if (g_error == _ERROR_TEMPERATURE_CRITICAL)
-        {
-            return _RESULT_CRITICAL;
+            break;
         }
     }
+    UART_writeString("CRITICAL: Stop waiting\n");
 
     PWM1_setFrequency(0);
-
     return _RESULT_SUCCESS;
 }
 

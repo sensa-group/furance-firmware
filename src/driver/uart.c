@@ -11,7 +11,7 @@
 
 #include <avr/io.h>
 
-static void _intToStr(int number, char *str);
+static void _intToStr(long long number, char *str);
 
 void UART_init(void)
 {
@@ -53,16 +53,16 @@ void UART_writeBuffer(uint8_t *buff, uint16_t len)
     }
 }
 
-void UART_writeIntegerString(int value)
+void UART_writeIntegerString(long long value)
 {
-    char str[10];
+    char str[50];
 
     _intToStr(value, str);
 
     UART_writeString(str);
 }
 
-static void _intToStr(int number, char *str)
+static void _intToStr(long long number, char *str)
 {
     uint8_t n = 0;
     char tmp;

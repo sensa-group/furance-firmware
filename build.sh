@@ -6,4 +6,6 @@
 #!/bin/bash
 
 make clean && make
+strip --strip-debug build/pecka.elf
+avr-size --mcu=atmega32u4 -C build/pecka.elf
 avr-objcopy -j .text -j .data -O ihex build/pecka.elf build/pecka.hex

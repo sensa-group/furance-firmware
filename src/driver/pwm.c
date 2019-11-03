@@ -26,6 +26,8 @@ static uint32_t _tick2;
 static volatile double _temperatureSensorValue;
 static volatile uint8_t _flameSensorValue;
 
+static volatile uint64_t _time = 0;
+
 void _isr1(void);
 void _isr2(void);
 void _readSensors(void);
@@ -125,8 +127,19 @@ void PWM2_setFrequency(uint32_t frequency)
     sei();
 }
 
+uint32_t TIME_milis(void)
+{
+    return (uint32_t)_time;
+}
+
+void TIME_reset(void)
+{
+    _time = 0;
+}
+
 ISR(TIMER1_COMPA_vect)
 {
+    _time++;
     //_readSensors();
     //_refreshMenu();
     _isr1();

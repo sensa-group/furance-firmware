@@ -12,6 +12,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
+#include <avr/pgmspace.h>
 
 #include "driver/uart.h"
 #include "driver/eeprom.h"
@@ -143,7 +144,7 @@ typedef struct
     ptrStateFunction callback;
 } state_t;
 
-const char *g_text[] = {
+const char * const g_text[] = {
     "",                                     // _STATE_NO_MENU
     "Start/Stop",                           // _STATE_START_STOP
     "Puz On/Off",                           // _STATE_SNAIL
@@ -299,7 +300,7 @@ static state_t g_states[] = {
     {_STATE_STOP_EX,                _TYPE_SUBMENU,      _STATE_STOP_EX,             _STATE_STOP_FAN_S,              _STATE_STOPPING,                    0,                                              0,          0,          0},
 
     {_STATE_STOP_FAN_T_O,           _TYPE_OPTION,       0,                          0,                              _STATE_STOP_FAN_T,                  EEPROM_ADDR_STOPPING_FAN_TIME,                  0,          300,        0},
-    {_STATE_STOP_FAN_S_O,           _TYPE_OPTION,       0,                          0,                              _STATE_STOP_FAN_S,                  EEPROM_ADDR_STOPPING_FAN_SPEED,                 0,          99,         0},
+    {_STATE_STOP_FAN_S_O,           _TYPE_OPTION,       0,                          0,                              _STATE_STOP_FAN_S,                  EEPROM_ADDR_STOPPING_FAN_SPEED,                 0,          100,        0},
 
     {_STATE_FLAME_MIN,              _TYPE_SUBMENU,      _STATE_FLAME_MIN_T,         _STATE_FLAME_MIN,               _STATE_FLAME_MIN_O,                 0,                                              0,          0,          0},
     {_STATE_FLAME_MIN_T,            _TYPE_SUBMENU,      _STATE_FLAME_MAX,           _STATE_FLAME_MIN,               _STATE_FLAME_MIN_T_O,               0,                                              0,          0,          0},
@@ -378,7 +379,8 @@ void MENU_init(void)
     DISPLAY_showString(">");
 
     //g_refreshDisplay = _REFRESH_DISPLAY_INIT;
-    _showMenuItem(g_text[g_currentState], g_text[g_states[g_currentState].nextStateId], 0);
+   _showMenuItem(g_text[g_currentState], g_text[g_states[g_currentState].nextStateId], 0);
+   // _showMenuItem((const char *)pgm_read_byte(g_text[g_currentState]), (const char *)pgm_read_byte(g_text[g_states[g_currentState].nextStateId]), 0);
 
     g_tick = 0;
 }
@@ -419,24 +421,6 @@ void MENU_refresh(void)
 {
     switch (g_refreshDisplay)
     {
-        case _REFRESH_DISPLAY_INIT:
-            DISPLAY_init();
-            DISPLAY_gotoXY(0, 0);
-            DISPLAY_showString("        |");
-            DISPLAY_gotoXY(0, 1);
-            DISPLAY_showString("        |");
-            DISPLAY_gotoXY(0, 2);
-            DISPLAY_showString("        |");
-            DISPLAY_gotoXY(0, 3);
-            DISPLAY_showString("        |");
-
-            DISPLAY_gotoXY(12, 0);
-            DISPLAY_showString("MENI:");
-            DISPLAY_gotoXY(9, 2);
-            DISPLAY_showString(">");
-
-            _showMenuItem(g_text[g_currentState], g_text[g_states[g_currentState].nextStateId], 0);
-            break;
         case _REFRESH_DISPLAY_MENU:
             do
             {
@@ -657,6 +641,7 @@ static void _showMenuOption(uint16_t value)
 
 ISR(PCINT0_vect)
 {
+    cli();
     //uint8_t intFlags = PORTC.INTFLAGS;
     //PORTC.INTFLAGS = intFlags;
 
@@ -666,6 +651,7 @@ ISR(PCINT0_vect)
 
     if (encACurrentState == g_encALastState && encBCurrentState == g_encBLastState && btnCurrentState == g_btnLastState)
     {
+        sei();
         return;
     }
 
@@ -704,4 +690,5 @@ ISR(PCINT0_vect)
     g_encALastState = encACurrentState;
     g_encBLastState = encBCurrentState;
     g_btnLastState = btnCurrentState;
+    sei();
 }
