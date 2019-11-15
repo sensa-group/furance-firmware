@@ -36,7 +36,7 @@ void UART_write(uint8_t data)
     UDR1 = data;
 }
 
-void UART_writeString(char *str)
+void UART_writeString(const char *str)
 {
     while (*str)
     {
