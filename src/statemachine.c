@@ -109,9 +109,50 @@ void SM_init(void)
 
     sei();                                                                  // Enable interrupts
 
-    DISPLAY_init();                                                         // Initialize display
+    //DISPLAY_init();                                                         // Initialize display
 
-    MENU_init();                                                            // Initialize menu
+    //MENU_init();                                                            // Initialize menu
+
+    while (1)
+    {
+        /*
+        GPIO_relayOn(7);
+        _delay_ms(1000);
+        GPIO_relayOff(7);
+        _delay_ms(1000);
+        */
+
+        /*
+        PWM0_setDutyCycle(100);
+        _delay_ms(1000);
+        PWM0_setDutyCycle(50);
+        _delay_ms(1000);
+        PWM0_setDutyCycle(0);
+        _delay_ms(1000);
+        */
+        /*
+        PWM1_setDutyCycle(100);
+        _delay_ms(1000);
+        PWM1_setDutyCycle(50);
+        _delay_ms(1000);
+        PWM1_setDutyCycle(0);
+        _delay_ms(1000);
+        */
+        /*
+        PWM2_setDutyCycle(100);
+        _delay_ms(1000);
+        PWM2_setDutyCycle(50);
+        _delay_ms(1000);
+        PWM2_setDutyCycle(0);
+        _delay_ms(1000);
+        */
+
+        /*
+        int tmp = (int)ds18b20_gettemp();
+        UART_writeIntegerString(tmp);
+        UART_writeString("\n");
+        */
+    }
 
     /*
     TCNT0 = 0;

@@ -25,13 +25,13 @@
 #define GPIO_BUZZER_PORT                PORTD
 #define GPIO_BUZZER_PIN                 4
 
-#define GPIO_RELAY_MOTOR1               0
-#define GPIO_RELAY_PUMP1                1
-#define GPIO_RELAY_PUNP2                2
-#define GPIO_RELAY_HEATER               4
-#define GPIO_RELAY_AC_MOTOR1            4
-#define GPIO_RELAY_MOTOR2               5
-#define GPIO_RELAY_OPTIONAL             6
+#define GPIO_RELAY_MOTOR1               3
+#define GPIO_RELAY_PUMP1                2
+#define GPIO_RELAY_PUNP2                1
+#define GPIO_RELAY_HEATER               0
+#define GPIO_RELAY_AC_MOTOR1            6
+#define GPIO_RELAY_MOTOR2               4
+#define GPIO_RELAY_OPTIONAL             5
 
 //#define GPIO_PCF8574_ID                 28
 #define GPIO_PCF8574_ID                 4
