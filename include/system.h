@@ -12,7 +12,7 @@
 /*
  * To make KDevelop happy :)
  */
-//#define __AVR_ATmega32U4__
+#define __AVR_ATmega32U4__
 //#define __AVR_ATmega328P__
 
 #define F_CPU 16000000UL
@@ -20,7 +20,7 @@
 //#define F_CPU 2000000UL
 //#define F_CPU 8000000UL
 
-#define BAUD_RATE 9600
+#define BAUD_RATE 115200
 //#define I2C_SCL_CLOCK 100000UL
 //#define I2C_SCL_CLOCK 100000UL
 //#define I2C_SCL_CLOCK 400000L

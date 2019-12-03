@@ -13,13 +13,13 @@
  * Uncomment to enable hardware debugging
  * Comment to disable hardware debugging
  */
-#define DEBUG_HARDWARE      1
+//#define DEBUG_HARDWARE      1
 
 /*
  * Uncomment to enable software debugging
  * Comment to disable software debugging
  */
-//#define DEBUG_SOFTWARE      1
+#define DEBUG_SOFTWARE      1
 
 /*
  * Buffer size for printf function

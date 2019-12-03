@@ -15,7 +15,6 @@
 #include "driver/ds18b20.h"
 #include "driver/adc.h"
 #include "driver/uart.h"
-#include "menu.h"
 
 static uint32_t _frequency;
 static uint32_t _tick;
@@ -156,7 +155,7 @@ void _readSensors(void)
 
     if (_temperatureSensorValue != temperatureValue || _flameSensorValue != flameValue)
     {
-        MENU_refreshSensorValue((uint16_t)temperatureValue, (uint16_t)flameValue);
+        //MENU_refreshSensorValue((uint16_t)temperatureValue, (uint16_t)flameValue);
     }
 
     _temperatureSensorValue = temperatureValue;

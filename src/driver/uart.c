@@ -10,6 +10,16 @@
 #include "driver/uart.h"
 
 #include <avr/io.h>
+#include <avr/interrupt.h>
+
+#include "debug.h"
+
+static uint8_t g_rxBuffer[UART_RX_BUFFER_SIZE];
+static uint8_t g_rxSize = 0;
+
+static ptrReceiveCallback g_callback = 0;
+
+static volatile uint8_t g_receivingInProgress;
 
 static void _intToStr(long long number, char *str);
 
@@ -19,9 +29,11 @@ void UART_init(void)
     UBRR1H = (uint8_t)(baudRate >> 8);
     UBRR1L = (uint8_t)(baudRate & 0xFF);
 
-    UCSR1B = (1 << RXEN1) | (1 << TXEN1);
+    UCSR1B = (1 << RXEN1) | (1 << TXEN1) | (1 << RXCIE1);
 
     UCSR1C = (1 << UCSZ11) | (1 << UCSZ10);
+
+    g_receivingInProgress = 0;
 }
 
 uint8_t UART_read(void)
@@ -62,6 +74,16 @@ void UART_writeIntegerString(long long value)
     UART_writeString(str);
 }
 
+void UART_setReaceiveCallback(ptrReceiveCallback receiveCallback)
+{
+    g_callback = receiveCallback;
+}
+
+uint8_t UART_recevingInProgress(void)
+{
+    return g_receivingInProgress;
+}
+
 static void _intToStr(long long number, char *str)
 {
     uint8_t n = 0;
@@ -97,3 +119,56 @@ static void _intToStr(long long number, char *str)
         str[n - i - 1] = tmp;
     }
 }
+
+ISR(USART1_RX_vect)
+{
+    cli();
+    uint8_t status = UCSR1A;
+    /*
+    if ((status & ((1 << 4) | (1 << 3) | (1 << 2))))            // TODO: Refactor
+    {
+        return;
+    }
+    */
+
+    g_rxBuffer[g_rxSize] = UDR1;
+    g_rxSize++;
+
+    if ((g_rxSize == 1 && g_rxBuffer[0] != UART_ESC) ||
+        (g_rxSize == 2 && g_rxBuffer[1] != UART_STX) ||
+        (g_rxSize > 1 && g_rxBuffer[0] != UART_ESC && g_rxBuffer[1] != UART_STX) ||
+        (g_rxSize >= UART_RX_BUFFER_SIZE))
+    {
+        g_rxSize = 0;
+        g_receivingInProgress = 0;
+        return;
+    }
+
+    g_receivingInProgress = 1;
+
+    if (g_rxSize > 2 && g_rxBuffer[g_rxSize - 2] == UART_ESC && g_rxBuffer[g_rxSize - 1] == UART_STX) 
+    {
+        g_rxBuffer[0] = UART_ESC;
+        g_rxBuffer[1] = UART_STX;
+        g_rxSize = 2;
+    }
+
+    if (g_rxSize > 1)
+    {
+        if (g_rxBuffer[g_rxSize - 2] == UART_ESC && g_rxBuffer[g_rxSize - 1] == UART_ETX)
+        {
+            if (g_callback)
+            {
+                for (uint8_t i = 0; i < g_rxSize; i++)
+                {
+                    DEBUG_printf("[%d] = %b\n", i, g_rxBuffer[i]);
+                }
+                g_callback(g_rxBuffer, g_rxSize);
+                g_rxSize = 0;
+                g_receivingInProgress = 0;
+            }
+        }
+    }
+    sei();
+}
+

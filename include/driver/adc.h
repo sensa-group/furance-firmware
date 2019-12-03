@@ -12,6 +12,7 @@
 #include <stdint.h>
 
 void ADC_init(void);
+uint8_t ADC_connected(uint8_t ch);
 uint16_t ADC_read(uint8_t ch);
 
 #endif // _ADC_H_

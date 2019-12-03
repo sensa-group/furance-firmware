@@ -28,7 +28,6 @@ void i2c_init(void)
   
   TWSR = 0;                         /* no prescaler */
   TWBR = (uint8_t)((F_CPU/SCL_CLOCK)-16)/2;  /* must be > 10 for stable operation */
-
 }/* i2c_init */
 
 

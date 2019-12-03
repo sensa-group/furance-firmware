@@ -20,9 +20,10 @@
 #include "driver/adc.h"
 #include "driver/pwm.h"
 #include "driver/pcf8574.h"
+#include "driver/mcp7940.h"
 #include "gpio.h"
 #include "display.h"
-#include "menu.h"
+#include "debug.h"
 
 #define _STATE_STOPPED                  0
 #define _STATE_STARTING                 1
@@ -81,7 +82,7 @@ static state_t g_states[] = {
 
 static uint8_t g_currentState;
 
-static double g_temperature = 0.0;
+static double g_temperature = -1.0;
 static double g_flame = 0;
 
 volatile static uint8_t g_snailRunning = 0;
@@ -89,13 +90,27 @@ volatile static uint8_t g_snailRunning = 0;
 static uint8_t g_lastError;
 static uint8_t g_error;
 
+static uint8_t g_seconds;
+static uint8_t g_minutes = 0xFF;            // To refresh first time when read
+static uint8_t g_hours;
+static uint8_t g_days;
+static uint8_t g_months;
+static uint16_t g_years;
+
+static void _uartCallback(uint8_t *buffer, uint8_t size);
+
 void SM_init(void)
 {
+    cli();
+
     g_currentState = _STATE_STOPPED;
     g_error = _ERROR_NO;
     g_lastError = g_error;
 
-    UART_init();                                                            // For debugging
+    DEBUG_init();
+
+    UART_init();
+    UART_setReaceiveCallback(_uartCallback);
 
     pcf8574_init();                                                         // PCF8574 init
 
@@ -107,52 +122,88 @@ void SM_init(void)
 
     ADC_init();                                                             // Initialize ADC foto resistor
 
+    MCP7940_init();                                                         // Initialize MCP7940 RTC
+
+    /*
+    for (uint16_t i = 0; i < 0xFFFF; i++)
+    {
+        EEPROM_writeWord(i, 0x0000);
+    }
+    */
+
+    /*
+    while (1)
+    {
+        GPIO_relayOn(GPIO_RELAY_HEATER);
+        UART_writeString("RELAY ON\n");
+        _delay_ms(1000);
+        GPIO_relayOff(GPIO_RELAY_HEATER);
+        UART_writeString("RELAY OFF\n");
+        _delay_ms(1000);
+    }
+    */
+
+    MCP7940_adjust(0, 50, 15, 30, 11, 2019);
+
+    /*
+    while (1)
+    {
+        MCP7940_now(&g_seconds, &g_minutes, &g_hours, &g_days, &g_months, &g_years);
+        UART_writeIntegerString(g_hours);
+        UART_writeString(":");
+        UART_writeIntegerString(g_minutes);
+        UART_writeString(":");
+        UART_writeIntegerString(g_seconds);
+        UART_writeString("\n");
+        UART_writeIntegerString(g_days);
+        UART_writeString(".");
+        UART_writeIntegerString(g_months);
+        UART_writeString(".");
+        UART_writeIntegerString(g_years);
+        UART_writeString(".");
+        UART_writeString("\n");
+        _delay_ms(1000);
+    }
+    */
+
     sei();                                                                  // Enable interrupts
 
     //DISPLAY_init();                                                         // Initialize display
 
     //MENU_init();                                                            // Initialize menu
 
+    /*
     while (1)
     {
-        /*
         GPIO_relayOn(7);
         _delay_ms(1000);
         GPIO_relayOff(7);
         _delay_ms(1000);
-        */
 
-        /*
         PWM0_setDutyCycle(100);
         _delay_ms(1000);
         PWM0_setDutyCycle(50);
         _delay_ms(1000);
         PWM0_setDutyCycle(0);
         _delay_ms(1000);
-        */
-        /*
         PWM1_setDutyCycle(100);
         _delay_ms(1000);
         PWM1_setDutyCycle(50);
         _delay_ms(1000);
         PWM1_setDutyCycle(0);
         _delay_ms(1000);
-        */
-        /*
         PWM2_setDutyCycle(100);
         _delay_ms(1000);
         PWM2_setDutyCycle(50);
         _delay_ms(1000);
         PWM2_setDutyCycle(0);
         _delay_ms(1000);
-        */
 
-        /*
         int tmp = (int)ds18b20_gettemp();
         UART_writeIntegerString(tmp);
         UART_writeString("\n");
-        */
     }
+    */
 
     /*
     TCNT0 = 0;
@@ -166,6 +217,13 @@ void SM_init(void)
     TCNT0 = 0;
 
     OCR0A = 16000;
+    */
+
+    /*
+    while (1)
+    {
+        _delay_ms(100);
+    }
     */
 
     _delay_ms(1000);                                                        // Just in case :D
@@ -201,8 +259,6 @@ void SM_init(void)
 
         g_currentState = _STATE_WAITING;
     }
-
-    UART_writeString("SM: Initialized\n");
 }
 
 void SM_exec(void)
@@ -247,38 +303,30 @@ void SM_exec(void)
         }
         */
 
+        /*
         if (g_error == _ERROR_NO)
         {
-            UART_writeString("State: ");
-            UART_writeIntegerString(g_currentState);
-            UART_writeString("\n");
             cli();
             switch (g_currentState)
             {
                 case _STATE_STOPPED:
-                    MENU_refreshError("STOP", "");
                     break;
                 case _STATE_STARTING:
-                    MENU_refreshError("POTPALA", "");
                     break;
                 case _STATE_STABILISATION:
-                    MENU_refreshError("STAB.", "");
                     break;
                 case _STATE_RUNNING:
-                    MENU_refreshError("RAD", "");
                     break;
                 case _STATE_STOPPING:
-                    MENU_refreshError("GASENJE", "");
                     break;
                 case _STATE_WAITING:
-                    MENU_refreshError("CEKANJE", "");
                     break;
                 default:
-                    MENU_refreshError("", "");
                     break;
             }
             sei();
         }
+        */
         
         result = g_states[g_currentState].callback();
         //lastState = g_currentState;
@@ -362,9 +410,18 @@ void SM_snailStartStop(void)
 
 static void _SM_checkSensors(void)
 {
+    uint8_t bufferDisplayPause[] = { UART_ESC, UART_STX, 'p', 'p', UART_ESC, UART_ETX };
+
+    while (UART_recevingInProgress())
+    {
+        _delay_ms(1);
+    }
+    UART_writeBuffer(bufferDisplayPause, 6);
+
     uint16_t temperatureCritical = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
     uint16_t temperatureStart = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_START);
-    uint16_t flame = ADC_read(0b111);
+    uint16_t flameStart = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
+    uint16_t flame = 0;
     double temperature = ds18b20_gettemp();
     //= ADC_read(0b111);
 
@@ -383,6 +440,7 @@ static void _SM_checkSensors(void)
             tmpError = _ERROR_TEMPERATURE_DISCONNECTED;
             break;
         }
+        i++;
     }
 
     if (g_error == _ERROR_TEMPERATURE_CRITICAL)
@@ -400,14 +458,10 @@ static void _SM_checkSensors(void)
         g_error = _ERROR_NO;
     }
 
-    i = 0;
-    double flame2 = 0;
-    for (i = 0; i < 10; i++)
+    if (tmpError == _ERROR_TEMPERATURE_DISCONNECTED)
     {
-        flame2 += ADC_read(0b111);
+        g_error = _ERROR_TEMPERATURE_DISCONNECTED;
     }
-    flame2 /= 10.0;
-    flame = (uint16_t)flame2;
 
     if (temperature > temperatureCritical)
     {
@@ -417,24 +471,29 @@ static void _SM_checkSensors(void)
         }
     }
 
-    /*
-    UART_writeString("R: ");
-    UART_writeIntegerString(flame);
-    UART_writeString("\n");
-    */
-
-    /*
-    if (flame == 1023)
-    {
-        g_error = _ERROR_FLAME_DISCONNECTED;
-    }
-    */
-
     //flame = SYSTEM_MAP(flame, 1020, 100, 0, 100);
     //flame = 100 - SYSTEM_MAP(flame, 100, 1023, 0, 100);
-    flame = (uint16_t)SYSTEM_MAP(flame, 1023.0, 100.0, 0.0, 100.0);
 
-    if (g_flame != flame || g_temperature != temperature)
+    if (ADC_connected(0b111))
+    {
+        flame = ADC_read(0b111);
+        flame = (uint16_t)SYSTEM_MAP(flame, 1023.0, 0.0, 0.0, 100.0);
+    }
+    else
+    {
+        if (g_error == _ERROR_NO)
+        {
+            g_error = _ERROR_FLAME_DISCONNECTED;
+        }
+    }
+
+    /*
+     * TODO: Only for testing - remove
+     */
+    g_error = _ERROR_NO;
+    g_flame = flame;            
+
+    if (g_flame != flame || g_temperature != temperature || g_error != _ERROR_NO)
     {
         /*
         UART_writeString("T: ");
@@ -444,42 +503,101 @@ static void _SM_checkSensors(void)
         UART_writeIntegerString(flame);
         UART_writeString("\n");
         */
-        cli();
-        MENU_refreshSensorValue((uint16_t)temperature, (uint16_t)flame);
-        sei();
+        //cli();
+        //MENU_refreshSensorValue((uint16_t)temperature, (uint16_t)flame);
+        uint8_t buffer[] = { UART_ESC, UART_STX, 's', 's', 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, UART_ESC, UART_ETX };
+        buffer[4] = ((uint16_t)temperature >> 8) & 0xFF;
+        buffer[5] = (uint16_t)temperature & 0xFF;
+        buffer[6] = ((uint16_t)flame >> 8) & 0xFF;
+        buffer[7] = (uint16_t)flame & 0xFF;
+        buffer[8] = ((uint16_t)flameStart >> 8) & 0xFF;
+        buffer[9] = (uint16_t)flameStart & 0xFF;
+        UART_writeBuffer(buffer, 12);
+        //sei();
     }
+
+    uint8_t ss;
+    uint8_t mm;
+    uint8_t hh;
+    uint8_t d;
+    uint8_t m;
+    uint16_t y;
+    //cli();
+    MCP7940_now(&ss, &mm, &hh, &d, &m, &y);
+    if (mm != g_minutes || hh != g_hours || d != g_days || m != g_months || y != g_years)
+    {
+        g_minutes = mm;
+        g_hours = hh;
+        g_days = d;
+        g_months = m;
+        g_years = y;
+
+        uint8_t buffer[] = { UART_ESC, UART_STX, 's', 't', 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, UART_ESC, UART_ETX };
+        buffer[4] = g_seconds;
+        buffer[5] = g_minutes;
+        buffer[6] = g_hours;
+        buffer[7] = g_days;
+        buffer[8] = g_months;
+        buffer[9] = (g_years >> 8) & 0xFF;
+        buffer[10] = g_years & 0xFF;
+        UART_writeBuffer(buffer, 13);
+    }
+    //sei();
 
     g_flame = flame;
     g_temperature = temperature;
 
     _SM_checkError();
+
+    bufferDisplayPause[3] = 'r';
+    UART_writeBuffer(bufferDisplayPause, 6);
+
+    _delay_ms(100);                             // Workaround for UART to work
 }
 
 static void _SM_checkError(void)
 {
     if (g_error != g_lastError)
     {
-        cli();
+        //cli();
+        uint8_t buffer[] = { UART_ESC, UART_STX, 'e', 'e', 0x00, UART_ESC, UART_ETX };
+        if (g_error == _ERROR_NO)
+        {
+            buffer[3] = 'n';
+        }
+        else
+        {
+            buffer[4] = g_error;
+        }
+        UART_writeBuffer(buffer, 7);
+        //sei();
+
+        /*
         switch (g_error)
         {
             case _ERROR_NO:
-                MENU_refreshError("", "");
-                GPIO_buzzerOff();
+                //MENU_refreshError("", "");
+                buffer[3] = 'n';
+                UART_writeBuffer(buffer, 7);
                 break;
             case _ERROR_TEMPERATURE_CRITICAL:
-                MENU_refreshError("G:RAD", "KRIT TEM");
-                GPIO_buzzerOn();
+                //MENU_refreshError("G:RAD", "KRIT TEM");
+                buffer[4] = _;
+                UART_writeBuffer(buffer, 7);
                 break;
             case _ERROR_TEMPERATURE_DISCONNECTED:
-                MENU_refreshError("G:SENZOR", "TEMP");
-                GPIO_buzzerOn();
+                //MENU_refreshError("G:SENZOR", "TEMP");
+                buffer[4] = ' ';
+                UART_writeBuffer(buffer, 7);
                 break;
             case _ERROR_FLAME_DISCONNECTED:
-                MENU_refreshError("G:SENZOR", "OKO");
-                GPIO_buzzerOn();
+                //MENU_refreshError("G:SENZOR", "OKO");
+                buffer[4] = ' ';
+                UART_writeBuffer(buffer, 7);
                 break;
         }
         sei();
+        */
     }
     g_lastError = g_error;
 }
@@ -530,7 +648,6 @@ static uint8_t _SM_stateStarting(void)
     uint32_t startTime = TIME_milis();
     uint32_t currentTime = TIME_milis();
 
-    UART_writeString("STARTING: Fan started\n");
     PWM1_setFrequency(fan1Speed);
     while (currentTime - startTime < fan1Time)
     {
@@ -545,7 +662,6 @@ static uint8_t _SM_stateStarting(void)
         
         if (g_error == _ERROR_TEMPERATURE_CRITICAL)
         {
-            UART_writeString("STARTING: Teperature critical\n");
             return _RESULT_CRITICAL;
         }
 
@@ -555,10 +671,8 @@ static uint8_t _SM_stateStarting(void)
         }
     }
     PWM1_setFrequency(0);
-    UART_writeString("STARTING: Fan stopped\n");
 
     PWM0_setDutyCycle(255);
-    UART_writeString("STARTING: Dispenser started\n");
     startTime = TIME_milis();
     currentTime = TIME_milis();
     while (currentTime - startTime < dispenserTime)
@@ -578,10 +692,8 @@ static uint8_t _SM_stateStarting(void)
         }
     }
     PWM0_setDutyCycle(0);
-    UART_writeString("STARTING: Dispenser started\n");
 
     GPIO_relayOn(GPIO_RELAY_HEATER);
-    UART_writeString("STARTING: Heater started\n");
     startTime = TIME_milis();
     currentTime = TIME_milis();
     while (currentTime - startTime < heaterTime)
@@ -592,7 +704,6 @@ static uint8_t _SM_stateStarting(void)
 
         if (g_error == _ERROR_TEMPERATURE_CRITICAL)
         {
-            UART_writeString("STARTING: Critical\n");
             return _RESULT_CRITICAL;
         }
 
@@ -603,7 +714,6 @@ static uint8_t _SM_stateStarting(void)
 
         if (currentTime - startTime >= fan2WaitingTime && !fanStarted)
         {
-            UART_writeString("STARTING: Fan started\n");
             PWM1_setFrequency(fan2Speed);
             fanStarted = 1;
         }
@@ -612,13 +722,11 @@ static uint8_t _SM_stateStarting(void)
         {
             if (!flameStartTime)
             {
-                UART_writeString("STARTING: Flame detected\n");
                 flameStartTime = currentTime;
             }
         }
         else
         {
-            UART_writeString("STARTING: Flame not detected\n");
             flameStartTime = 0;
         }
 
@@ -626,15 +734,11 @@ static uint8_t _SM_stateStarting(void)
         {
             PWM1_setFrequency(0);
             GPIO_relayOff(GPIO_RELAY_HEATER);
-            UART_writeString("STARTING: Heater stopped\n");
-            UART_writeString("STARTING: Fan started\n");
-            UART_writeString("STARTING: Success\n");
             return _RESULT_SUCCESS;
         }
     }
     PWM1_setFrequency(0);
     GPIO_relayOff(GPIO_RELAY_HEATER);
-    UART_writeString("STARTING: Error\n");
 
     return _RESULT_ERROR;
 }
@@ -724,7 +828,6 @@ static uint8_t _SM_stateRunning(void)
         PWM0_setDutyCycle(255);
         startTime = TIME_milis();
         currentTime = TIME_milis();
-        UART_writeString("RUN: Dispenser started\n");
         while (currentTime - startTime < timeDispenserOn)
         {
             _SM_checkSensors();
@@ -735,13 +838,11 @@ static uint8_t _SM_stateRunning(void)
             {
                 if (!flameStartTime)
                 {
-                    UART_writeString("RUN: Flame detected\n");
                     flameStartTime = currentTime;
                 }
             }
             else
             {
-                UART_writeString("RUN: Flame not detected\n");
                 flameStartTime = 0;
             }
 
@@ -754,9 +855,6 @@ static uint8_t _SM_stateRunning(void)
             {
                 PWM1_setFrequency(0);
                 PWM0_setDutyCycle(0);
-                UART_writeString("RUN: Heater stopped\n");
-                UART_writeString("RUN: Fan started\n");
-                UART_writeString("RUN: Error\n");
                 return _RESULT_ERROR;
             }
 
@@ -764,7 +862,6 @@ static uint8_t _SM_stateRunning(void)
             {
                 PWM0_setDutyCycle(0);
                 PWM1_setFrequency(0);
-                UART_writeString("RUN: Critical\n");
                 return _RESULT_CRITICAL;
             }
 
@@ -772,12 +869,10 @@ static uint8_t _SM_stateRunning(void)
             {
                 PWM0_setDutyCycle(0);
                 PWM1_setFrequency(0);
-                UART_writeString("RUN: Max temp\n");
                 return _RESULT_SUCCESS;
             }
         }
         PWM0_setDutyCycle(0);
-        UART_writeString("RUN: Dispenser stopped\n");
 
         startTime = TIME_milis();
         currentTime = TIME_milis();
@@ -791,13 +886,11 @@ static uint8_t _SM_stateRunning(void)
             {
                 if (!flameStartTime)
                 {
-                    UART_writeString("RUN: Flame detected\n");
                     flameStartTime = currentTime;
                 }
             }
             else
             {
-                UART_writeString("RUN: Flame not detected\n");
                 flameStartTime = 0;
             }
 
@@ -810,9 +903,6 @@ static uint8_t _SM_stateRunning(void)
             {
                 PWM1_setFrequency(0);
                 PWM0_setDutyCycle(0);
-                UART_writeString("RUN: Heater stopped\n");
-                UART_writeString("RUN: Fan started\n");
-                UART_writeString("RUN: Error\n");
                 return _RESULT_ERROR;
             }
 
@@ -820,7 +910,6 @@ static uint8_t _SM_stateRunning(void)
             {
                 PWM0_setDutyCycle(0);
                 PWM1_setFrequency(0);
-                UART_writeString("RUN: Critical\n");
                 return _RESULT_CRITICAL;
             }
 
@@ -828,7 +917,6 @@ static uint8_t _SM_stateRunning(void)
             {
                 PWM0_setDutyCycle(0);
                 PWM1_setFrequency(0);
-                UART_writeString("RUN: Max temp\n");
                 return _RESULT_SUCCESS;
             }
         }
@@ -856,7 +944,6 @@ static uint8_t _SM_stateStopping(void)
 
     startTime = TIME_milis();
     currentTime = TIME_milis();
-    UART_writeString("STOPPING: Flame stopping\n");
     while (running)
     {
         _SM_checkSensors();
@@ -865,7 +952,6 @@ static uint8_t _SM_stateStopping(void)
 
         if (g_error == _ERROR_TEMPERATURE_CRITICAL)
         {
-            UART_writeString("STOPPING: Critical\n");
             return _RESULT_CRITICAL;
         }
 
@@ -881,11 +967,9 @@ static uint8_t _SM_stateStopping(void)
             startTime = currentTime;
         }
     }
-    UART_writeString("STOPPING: Flame stopped\n");
 
     startTime = TIME_milis();
     currentTime = TIME_milis();
-    UART_writeString("STOPPING: Start waiting\n");
     while (currentTime - startTime < fanTime)
     {
         _SM_checkSensors();
@@ -894,11 +978,9 @@ static uint8_t _SM_stateStopping(void)
 
         if (g_error == _ERROR_TEMPERATURE_CRITICAL)
         {
-            UART_writeString("STOPPING: Critical\n");
             return _RESULT_CRITICAL;
         }
     }
-    UART_writeString("STOPPING: Stop waiting\n");
 
     PWM1_setFrequency(0);
     return _RESULT_SUCCESS;
@@ -967,7 +1049,6 @@ static uint8_t _SM_stateCritical(void)
 
     PWM1_setFrequency(fanSpeed);
 
-    UART_writeString("CRITICAL: Start waiting\n");
     while (1)
     {
         _SM_checkSensors();
@@ -977,10 +1058,91 @@ static uint8_t _SM_stateCritical(void)
             break;
         }
     }
-    UART_writeString("CRITICAL: Stop waiting\n");
 
     PWM1_setFrequency(0);
     return _RESULT_SUCCESS;
+}
+
+static void _uartCallback(uint8_t *buffer, uint8_t size)
+{
+    if (buffer[2] == 'g')               // GET
+    {
+        if (buffer[3] == 'e')           // EEPROM
+        {
+            //cli();
+            uint8_t bufferResult[] = { UART_ESC, UART_STX, 'g', 'e', 0x00, 0x00, UART_ESC, UART_ETX };
+            //g_optionValue = (buffer[4] << 8) | (buffer[5]);
+            //g_refreshDisplay = _REFRESH_DISPLAY_OPTION_1;
+            uint16_t value = EEPROM_readWord((buffer[4] << 8) | buffer[5]);
+            bufferResult[4] = (value >> 8) & 0xFF;
+            bufferResult[5] = value & 0xFF;
+            UART_writeBuffer(bufferResult, 8);
+            //sei();
+        }
+    }
+    else if (buffer[2] == 's')          // SET
+    {
+        if (buffer[3] == 'e')           // EEPROM
+        {
+            EEPROM_writeWord((buffer[4] << 8) | buffer[5], (buffer[6] << 8) | buffer[7]);
+        }
+        else if (buffer[3] == 't')      // TIME
+        {
+            MCP7940_now(&g_seconds, &g_minutes, &g_hours, &g_days, &g_months, &g_years);
+            if (buffer[4] != 0xFF)
+            {
+                g_seconds = buffer[4];
+            }
+            if (buffer[5] != 0xFF)
+            {
+                g_minutes = buffer[5];
+            }
+            if (buffer[6] != 0xFF)
+            {
+                g_hours = buffer[6];
+            }
+            if (buffer[7] != 0xFF)
+            {
+                g_days = buffer[7];
+            }
+            if (buffer[8] != 0xFF)
+            {
+                g_months = buffer[8];
+            }
+            //g_years = (buffer[9] << 8) | buffer[10];
+            uint16_t tmpYear = (buffer[9] << 8) | buffer[10];
+            if (tmpYear != 0xFFFF)
+            {
+                g_years = tmpYear;
+            }
+            MCP7940_adjust(g_seconds, g_minutes, g_hours, g_days, g_months, g_years);
+        }
+    }
+    else if (buffer[2] == 'c')          // COMMAND
+    {
+        if (buffer[3] == 'r')           // RUNNING
+        {
+            if (buffer[4])
+            {
+                SM_start();
+            }
+            else
+            {
+                SM_stop();
+            }
+        }
+        else if (buffer[3] == 's')      // SNAIL
+        {
+            if (buffer[4])
+            {
+                SM_snailStart();
+            }
+            else
+            {
+                SM_snailStop();
+            }
+        }
+    }
 }
 
 /*

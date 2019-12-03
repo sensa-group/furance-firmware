@@ -7,6 +7,7 @@
 #include <stdarg.h>
 
 #include "driver/uart.h"
+#include "driver/softuart.h"
 
 #ifdef DEBUG_ENABLED
 uint8_t _hex_map[] = { 'A', 'B', 'C', 'D', 'E', 'F' };
@@ -18,6 +19,11 @@ void _DEBUG_intToString(long long number, char *str);
 void DEBUG_init(void)
 {
 #ifdef DEBUG_ENABLED
+
+#ifdef DEBUG_SOFTWARE
+    uart_init();
+#endif // DEBUG_SOFTWARE
+
 #endif // DEBUG_ENABLED
 }
 
@@ -29,6 +35,10 @@ void DEBUG_logString(const char *str)
     UART_writeString(str);
 #endif // DEBUG_ENABLED
 
+#ifdef DEBUG_SOFTWARE
+    uart_tx_str(str);
+#endif // DEBUG_SOFTWARE
+
 #endif // DEBUG_ENABLED
 }
 
@@ -36,12 +46,16 @@ void DEBUG_logByte(uint8_t data)
 {
 #ifdef DEBUG_ENABLED
 
-#ifdef DEBUG_HARDWARE
     char str[5];
-
     _DEBUG_byteToString(data, str);
+
+#ifdef DEBUG_HARDWARE
     UART_writeString(str);
 #endif // DEBUG_HARDWARE
+
+#ifdef DEBUG_SOFTWARE
+    uart_tx_str(str);
+#endif // DEBUG_SOFTWARE
 
 #endif // DEBUG_ENABLED
 }
@@ -50,11 +64,16 @@ void DEBUG_logInteger(long long data)
 {
 #ifdef DEBUG_ENABLED
 
-#ifdef DEBUG_HARDWARE
     char str[15];
-
     _DEBUG_intToString(data, str);
+
+#ifdef DEBUG_HARDWARE
+    UART_writeString(str);
 #endif // DEBUG_HARDWARE
+
+#ifdef DEBUG_SOFTWARE
+    uart_tx_str(str);
+#endif // DEBUG_SOFTWARE
 
 #endif // DEBUG_ENABLED
 }
@@ -62,7 +81,6 @@ void DEBUG_logInteger(long long data)
 void DEBUG_printf(const char *str, ...)
 {
 #ifdef DEBUG_ENABLED
-
     char buffer[DEBUG_BUFFER_SIZE];
     char tmpBuffer[10];
     strcpy(buffer, str);
@@ -70,7 +88,6 @@ void DEBUG_printf(const char *str, ...)
     va_list args;
     va_start(args, str);
 
-#ifdef DEBUG_HARDWARE
     char *tmp = buffer;
     char *start = buffer;
 
@@ -81,33 +98,38 @@ void DEBUG_printf(const char *str, ...)
             *tmp = '\0';
             if (tmp != start)
             {
-                UART_writeString(start);
+                DEBUG_logString(start);
             }
 
             switch (*(tmp + 1))
             {
                 case 'b':
                     _DEBUG_byteToString((uint8_t)va_arg(args, int), tmpBuffer);
+                    DEBUG_logString(tmpBuffer);
                     break;
                 case 'd':
                     _DEBUG_intToString(va_arg(args, int), tmpBuffer);
+                    DEBUG_logString(tmpBuffer);
                     break;
                 case 's':
-                    UART_writeString(va_arg(args, const char *));
+                    DEBUG_logString(va_arg(args, const char *));
                     break;
                 default:
-                    UART_write(*(tmp + 1));
+                    DEBUG_logByte(*(tmp + 1));
                     break;
             }
 
             tmp++;
-            start = tmp;
+            start = tmp + 1;
         }
     }
-#endif // DEBUG_HARDWARE
+
+    if (tmp != start)
+    {
+        DEBUG_logString(start);
+    }
 
     va_end(args);
-
 #endif // DEBUG_ENABLED
 }
 
@@ -118,7 +140,7 @@ void _DEBUG_byteToString(uint8_t data, char *str)
     str[0] = '0';
     str[1] = 'x';
 
-    tmp = data & 0x0F;
+    tmp = (data >> 4) & 0x0F;
     if (tmp > 9)
     {
         tmp -= 10;
@@ -126,10 +148,10 @@ void _DEBUG_byteToString(uint8_t data, char *str)
     }
     else
     {
-        str[2] = data + '0';
+        str[2] = tmp + '0';
     }
 
-    tmp = (data >> 8) & 0x0F;
+    tmp = data & 0x0F;
     if (tmp > 9)
     {
         tmp -= 10;
@@ -137,7 +159,7 @@ void _DEBUG_byteToString(uint8_t data, char *str)
     }
     else
     {
-        str[3] = data + '0';
+        str[3] = tmp + '0';
     }
 
     str[4] = '\0';

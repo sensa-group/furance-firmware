@@ -23,5 +23,4 @@ void PWM2_setFrequency(uint32_t frequency);
 uint32_t TIME_milis(void);
 void TIME_reset(void);
 
-
 #endif // _PWM_H_
