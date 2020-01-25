@@ -159,10 +159,12 @@ ISR(USART1_RX_vect)
         {
             if (g_callback)
             {
+                /*
                 for (uint8_t i = 0; i < g_rxSize; i++)
                 {
                     DEBUG_printf("[%d] = %b\n", i, g_rxBuffer[i]);
                 }
+                */
                 g_callback(g_rxBuffer, g_rxSize);
                 g_rxSize = 0;
                 g_receivingInProgress = 0;

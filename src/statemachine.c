@@ -143,7 +143,7 @@ void SM_init(void)
     }
     */
 
-    MCP7940_adjust(0, 50, 15, 30, 11, 2019);
+    //MCP7940_adjust(0, 50, 15, 30, 11, 2019);
 
     /*
     while (1)

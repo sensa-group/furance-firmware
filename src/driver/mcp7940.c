@@ -28,6 +28,7 @@ static void _clearRegisterBit(uint8_t reg, uint8_t b);
 void MCP7940_init(void)
 {
     MCP7940_deviceStart();
+    _setRegisterBit(MCP7940_RTCWKDAY, MCP7940_VBATEN);
     return;
 
     uint8_t crystalStatus = _readRegisterBit(MCP7940_RTCSEC, MCP7940_ST);
