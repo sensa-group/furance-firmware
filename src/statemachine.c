@@ -124,107 +124,14 @@ void SM_init(void)
 
     MCP7940_init();                                                         // Initialize MCP7940 RTC
 
-    /*
-    for (uint16_t i = 0; i < 0xFFFF; i++)
-    {
-        EEPROM_writeWord(i, 0x0000);
-    }
-    */
-
-    /*
-    while (1)
-    {
-        GPIO_relayOn(GPIO_RELAY_HEATER);
-        UART_writeString("RELAY ON\n");
-        _delay_ms(1000);
-        GPIO_relayOff(GPIO_RELAY_HEATER);
-        UART_writeString("RELAY OFF\n");
-        _delay_ms(1000);
-    }
-    */
-
-    //MCP7940_adjust(0, 50, 15, 30, 11, 2019);
-
-    /*
-    while (1)
-    {
-        MCP7940_now(&g_seconds, &g_minutes, &g_hours, &g_days, &g_months, &g_years);
-        UART_writeIntegerString(g_hours);
-        UART_writeString(":");
-        UART_writeIntegerString(g_minutes);
-        UART_writeString(":");
-        UART_writeIntegerString(g_seconds);
-        UART_writeString("\n");
-        UART_writeIntegerString(g_days);
-        UART_writeString(".");
-        UART_writeIntegerString(g_months);
-        UART_writeString(".");
-        UART_writeIntegerString(g_years);
-        UART_writeString(".");
-        UART_writeString("\n");
-        _delay_ms(1000);
-    }
-    */
-
     sei();                                                                  // Enable interrupts
 
     //DISPLAY_init();                                                         // Initialize display
 
     //MENU_init();                                                            // Initialize menu
 
-    /*
-    while (1)
-    {
-        GPIO_relayOn(7);
-        _delay_ms(1000);
-        GPIO_relayOff(7);
-        _delay_ms(1000);
-
-        PWM0_setDutyCycle(100);
-        _delay_ms(1000);
-        PWM0_setDutyCycle(50);
-        _delay_ms(1000);
-        PWM0_setDutyCycle(0);
-        _delay_ms(1000);
-        PWM1_setDutyCycle(100);
-        _delay_ms(1000);
-        PWM1_setDutyCycle(50);
-        _delay_ms(1000);
-        PWM1_setDutyCycle(0);
-        _delay_ms(1000);
-        PWM2_setDutyCycle(100);
-        _delay_ms(1000);
-        PWM2_setDutyCycle(50);
-        _delay_ms(1000);
-        PWM2_setDutyCycle(0);
-        _delay_ms(1000);
-
-        int tmp = (int)ds18b20_gettemp();
-        UART_writeIntegerString(tmp);
-        UART_writeString("\n");
-    }
-    */
-
-    /*
-    TCNT0 = 0;
-    OCR0A = 0;
-    OCR0B = 0;
-
-    //TCCR1A = (1 << COM1A1);
-    TCCR0B = (1<< CS00) | (1 << WGM02);
-    TIMSK0 = (1 << OCIE0A);
-
-    TCNT0 = 0;
-
-    OCR0A = 16000;
-    */
-
-    /*
-    while (1)
-    {
-        _delay_ms(100);
-    }
-    */
+    g_minutes = 0xFF;
+    _SM_checkSensors();                                                     // Check sensors for init time
 
     _delay_ms(1000);                                                        // Just in case :D
 
@@ -268,66 +175,6 @@ void SM_exec(void)
 
     while (1)
     {
-        /*
-        _SM_checkSensors();
-        _SM_refreshDisplay();
-
-        if (g_snailRunning)
-        {
-            g_currentState = _STATE_SNAIL;
-            g_stateInitialized = 0;
-            g_stateStartTime = TIMER0_millis();
-        }
-
-        if (g_currentState == _STATE_STOPPED && EEPROM_readWord(EEPROM_ADDR_SYSTEM_RUNNING))
-        {
-            g_currentState = _STATE_STARTING;
-            g_stateInitialized = 0;
-            g_stateStartTime = TIMER0_millis();
-        }
-        else if (g_currentState != _STATE_STOPPED && !EEPROM_readWord(EEPROM_ADDR_SYSTEM_RUNNING))
-        {
-            if (g_currentState == _STATE_WAITING)
-            {
-                g_currentState = _STATE_STOPPED;
-            }
-            if (g_currentState != _STATE_WAITING)
-            {
-                g_currentState = _STATE_STOPPED;
-            }
-            SYSTEM_WRITE_LOW(SYSTEM_PORTC, 0);
-            GPIO_relayOff(GPIO_RELAY_HEATER);
-            PWM1_setDutyCycleCH0(0);
-            g_stateInitialized = 0;
-            g_stateStartTime = TIMER0_millis();
-        }
-        */
-
-        /*
-        if (g_error == _ERROR_NO)
-        {
-            cli();
-            switch (g_currentState)
-            {
-                case _STATE_STOPPED:
-                    break;
-                case _STATE_STARTING:
-                    break;
-                case _STATE_STABILISATION:
-                    break;
-                case _STATE_RUNNING:
-                    break;
-                case _STATE_STOPPING:
-                    break;
-                case _STATE_WAITING:
-                    break;
-                default:
-                    break;
-            }
-            sei();
-        }
-        */
-        
         result = g_states[g_currentState].callback();
         //lastState = g_currentState;
 
@@ -477,7 +324,8 @@ static void _SM_checkSensors(void)
     if (ADC_connected(0b111))
     {
         flame = ADC_read(0b111);
-        flame = (uint16_t)SYSTEM_MAP(flame, 1023.0, 0.0, 0.0, 100.0);
+        //flame = (uint16_t)SYSTEM_MAP(flame, 1023.0, 0.0, 0.0, 100.0);
+        flame = (uint16_t)SYSTEM_MAP(flame, 0.0, 1023.0, 0.0, 100.0);
     }
     else
     {
@@ -490,8 +338,8 @@ static void _SM_checkSensors(void)
     /*
      * TODO: Only for testing - remove
      */
-    g_error = _ERROR_NO;
-    g_flame = flame;            
+    //g_error = _ERROR_NO;
+    //g_flame = flame;            
 
     if (g_flame != flame || g_temperature != temperature || g_error != _ERROR_NO)
     {
@@ -633,14 +481,14 @@ static uint8_t _SM_stateStopped(void)
 
 static uint8_t _SM_stateStarting(void)
 {
-    uint8_t fan1Speed = SYSTEM_MAP((uint8_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN_SPEED), 0, 100, 1, 20);
-    uint16_t fan1Time = EEPROM_readWord(EEPROM_ADDR_STARTING_FAN_TIME) * 1000;
-    uint16_t dispenserTime = EEPROM_readWord(EEPROM_ADDR_STARTING_DISPENSER_TIME) * 1000;
+    uint8_t fan1Speed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN_SPEED);
+    uint32_t fan1Time = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN_TIME) * 1000;
+    uint32_t dispenserTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_DISPENSER_TIME) * 1000;
     uint32_t heaterTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_HEATER_TIME) * 1000;
-    uint8_t fan2Speed = SYSTEM_MAP((uint8_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN2_SPEED), 0, 100, 1, 20);
-    uint16_t fan2WaitingTime = EEPROM_readWord(EEPROM_ADDR_STARTING_FAN2_WAITING_TIME) * 1000;
+    uint8_t fan2Speed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN2_SPEED);
+    uint32_t fan2WaitingTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN2_WAITING_TIME) * 1000;
     uint16_t flameMin = EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_MAX);
-    uint16_t flameTime = (uint16_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_TIME) * 1000;
+    uint32_t flameTime = (uint16_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_TIME) * 1000;
 
     uint8_t fanStarted = 0;
     uint32_t flameStartTime = 0;
@@ -746,12 +594,17 @@ static uint8_t _SM_stateStarting(void)
 static uint8_t _SM_stateStabilisation(void)
 {
     uint16_t stabilisationTime = EEPROM_readWord(EEPROM_ADDR_STABILISATION_TOTAL_TIME);
-    uint8_t fanSpeed = (uint8_t)SYSTEM_MAP(EEPROM_readWord(EEPROM_ADDR_STABILISATION_FAN_SPEED), 0, 100.0, 1.0, 20.0);
-    uint16_t timeDispenserOn = EEPROM_readWord(EEPROM_ADDR_STABILISATION_DISPENSER_TIME_ON) * 1000;
-    uint16_t timeDispenserOff = EEPROM_readWord(EEPROM_ADDR_STABILISATION_DISPENSER_TIME_OFF) * 1000;
+    uint8_t fanSpeed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_STABILISATION_FAN_SPEED);
+    uint32_t timeDispenserOn = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STABILISATION_DISPENSER_TIME_ON) * 1000;
+    uint32_t timeDispenserOff = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STABILISATION_DISPENSER_TIME_OFF) * 1000;
 
     uint32_t startTime = TIME_milis();
     uint32_t currentTime = TIME_milis();
+
+    if (stabilisationTime == 0)
+    {
+        return _RESULT_SUCCESS;
+    }
 
     PWM1_setFrequency(fanSpeed);
 
@@ -808,12 +661,12 @@ static uint8_t _SM_stateStabilisation(void)
 
 static uint8_t _SM_stateRunning(void)
 {
-    uint8_t fanSpeed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_FAN_SPEED);
-    uint16_t timeDispenserOn = EEPROM_readWord(EEPROM_ADDR_RUNNING_DISPENSER_TIME_ON) * 1000;
-    uint16_t timeDispenserOff = EEPROM_readWord(EEPROM_ADDR_RUNNING_DISPENSER_TIME_OFF) * 1000;
-    uint16_t maxTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_MAX);
-    uint16_t flameMax = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
-    uint16_t flameTime = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_TIME) * 1000;
+    uint8_t fanSpeed = 0;
+    uint32_t timeDispenserOn = 0;
+    uint32_t timeDispenserOff = 0;
+    uint16_t maxTemp = 0;
+    uint16_t flameMax = 0;
+    uint32_t flameTime = 0;
     //uint16_t criticalTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
 
     uint32_t flameStartTime = 0;
@@ -821,15 +674,32 @@ static uint8_t _SM_stateRunning(void)
     uint32_t startTime = TIME_milis();
     uint32_t currentTime = TIME_milis();
 
-    PWM1_setFrequency(fanSpeed);
-
     while (1)
     {
+        fanSpeed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_FAN_SPEED);
+        timeDispenserOn = (uint32_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_DISPENSER_TIME_ON) * 1000;
+        timeDispenserOff = (uint32_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_DISPENSER_TIME_OFF) * 1000;
+        maxTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_MAX);
+        flameMax = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
+        flameTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_TIME) * 1000;
+        //uint16_t criticalTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
+
+        PWM1_setFrequency(fanSpeed);
+
         PWM0_setDutyCycle(255);
         startTime = TIME_milis();
         currentTime = TIME_milis();
         while (currentTime - startTime < timeDispenserOn)
         {
+            fanSpeed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_FAN_SPEED);
+            timeDispenserOn = (uint32_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_DISPENSER_TIME_ON) * 1000;
+            timeDispenserOff = (uint32_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_DISPENSER_TIME_OFF) * 1000;
+            maxTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_MAX);
+            flameMax = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
+            flameTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_TIME) * 1000;
+
+            PWM1_setFrequency(fanSpeed);
+
             _SM_checkSensors();
 
             currentTime = TIME_milis();
@@ -878,6 +748,15 @@ static uint8_t _SM_stateRunning(void)
         currentTime = TIME_milis();
         while (currentTime - startTime < timeDispenserOff)
         {
+            fanSpeed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_FAN_SPEED);
+            timeDispenserOn = (uint32_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_DISPENSER_TIME_ON) * 1000;
+            timeDispenserOff = (uint32_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_DISPENSER_TIME_OFF) * 1000;
+            maxTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_MAX);
+            flameMax = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
+            flameTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_TIME) * 1000;
+
+            PWM1_setFrequency(fanSpeed);
+
             _SM_checkSensors();
 
             currentTime = TIME_milis();
@@ -929,7 +808,7 @@ static uint8_t _SM_stateStopping(void)
 {
     uint32_t flameTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_TIME) * 1000;
     uint16_t flameMax = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
-    uint8_t fanSpeed = (uint8_t)SYSTEM_MAP(EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_SPEED), 0.0, 100.0, 10.0, 20.0);
+    uint8_t fanSpeed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_SPEED);
     uint32_t fanTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_TIME) * 1000;
 
     uint8_t running = 1;
@@ -1037,7 +916,7 @@ static uint8_t _SM_stateSnail(void)
 
 static uint8_t _SM_stateCritical(void)
 {
-    uint8_t fanSpeed = (uint8_t)SYSTEM_MAP(EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_SPEED), 0.0, 100.0, 10.0, 20.0);
+    uint8_t fanSpeed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_SPEED);
     uint16_t minTemperature = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_START);
 
     EEPROM_writeWord(EEPROM_ADDR_SYSTEM_RUNNING, 0);

@@ -87,9 +87,17 @@ void PWM1_setFrequency(uint32_t frequency)
 {
     cli();
 
-    if (frequency == 20)
+    if (frequency == 100)
     {
         frequency = 1;
+    }
+    else if (frequency == 0)
+    {
+        frequency = 0;
+    }
+    else
+    {
+        frequency = SYSTEM_MAP(frequency, 0, 100, 10, 70);
     }
 
     _frequency = frequency;

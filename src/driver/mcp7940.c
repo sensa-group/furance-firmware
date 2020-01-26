@@ -14,6 +14,7 @@
 
 #include "driver/uart.h"
 #include "driver/i2cmaster.h"
+#include "debug.h"
 
 static uint8_t _bcd2int(uint8_t bcd);
 static uint8_t _int2bcd(uint8_t dec);
@@ -77,6 +78,7 @@ void MCP7940_now(uint8_t *ss, uint8_t *mm, uint8_t *hh, uint8_t *d, uint8_t *m, 
     i2c_write(MCP7940_RTCSEC);
     i2c_stop();
 
+    _delay_ms(250);
     i2c_start((MCP7940_ADDRESS << 1) | I2C_READ);
     *ss = _bcd2int(i2c_readAck() & 0x7F);
     *mm = _bcd2int(i2c_readAck() & 0x7F);
@@ -86,6 +88,7 @@ void MCP7940_now(uint8_t *ss, uint8_t *mm, uint8_t *hh, uint8_t *d, uint8_t *m, 
     *m = _bcd2int(i2c_readAck() & 0x1F);
     *y = _bcd2int(i2c_readNak()) + 2000;
     i2c_stop();
+    _delay_ms(250);
 }
 
 void MCP7940_adjust(uint8_t ss, uint8_t mm, uint8_t hh, uint8_t d, uint8_t m, uint16_t y)

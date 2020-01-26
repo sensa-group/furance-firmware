@@ -13,6 +13,8 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 
+#include "debug.h"
+
 void ADC_init(void)
 {
     DDRF &= ~(1 << PF7);
@@ -21,23 +23,74 @@ void ADC_init(void)
 
     //ADMUX = 0x00;
     ADMUX = (1 << REFS0);
+    //ADMUX = (1 << REFS0) | (1 << REFS1);
     ADCSRA = (1 << ADEN) | (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0);
     //DIDR0 = (1 << ADC0D);
 
     DDRB |= (1 << PB0);
     //PORTB |= (1 << PB0);
     PORTB &= ~(1 << PB0);
+
+    //PORTB |= (1 << PB0);
+
+    /*
+    ADMUX = 0x00;
+    ADCSRA = 0x00;
+    DDRB |= (1 << PB0);
+    PORTB &= ~(1 << PB0);
+    */
 }
 
 uint8_t ADC_connected(uint8_t ch)
 {
-    uint8_t result = 0;
+    uint8_t result = 1;
 
-    PORTB |= (1 << PB0);
+    return 1;
 
-    result = ADC_read(ch) != 3 ? 1 : 0;
+    if ((PINF >> PF7) & 0x01)
+    {
+        return 1;
+    }
 
-    PORTB &= ~(1 << PB0);
+    return 0;
+
+    int totalDiff = 0;
+
+    for (uint8_t i = 0; i < 5; i++)
+    {
+        PORTB |= (1 << PB0);
+        //PORTB &= ~(1 << PB0);
+
+        _delay_ms(1);
+        uint16_t value1 = ADC_read(ch);
+        DEBUG_printf("ADC read 1 = %d\n", value1);
+
+        if (value1 == 3)
+        {
+            result = 0;
+            break;
+        }
+
+        PORTB &= ~(1 << PB0);
+        //PORTB |= (1 << PB0);
+
+        _delay_ms(1);
+        uint16_t value2 = ADC_read(ch);
+        DEBUG_printf("ADC read 2 = %d\n", value2);
+
+        int diff = value1 - value2;
+        if (diff < 0)
+        {
+            diff *= -1;
+        }
+        totalDiff += diff;
+        DEBUG_printf("ADC read diff = %d\n\n", totalDiff);
+    }
+
+    if (totalDiff > 250)
+    {
+        result = 0;
+    }
 
     return result;
 }
@@ -62,7 +115,9 @@ uint16_t ADC_read(uint8_t ch)
     while(ADCSRA & (1 << ADSC));
 
     //ADCSRA &= ~(1 << ADEN);
+
+    uint16_t result = ADC;
  
     //return (ADCH << 8) | ADCL;
-    return ADC;
+    return result;
 }
