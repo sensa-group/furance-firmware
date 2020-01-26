@@ -499,6 +499,17 @@ static uint8_t _SM_stateStarting(void)
     PWM1_setFrequency(fan1Speed);
     while (currentTime - startTime < fan1Time)
     {
+        fan1Speed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN_SPEED);
+        fan1Time = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN_TIME) * 1000;
+        dispenserTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_DISPENSER_TIME) * 1000;
+        heaterTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_HEATER_TIME) * 1000;
+        fan2Speed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN2_SPEED);
+        fan2WaitingTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN2_WAITING_TIME) * 1000;
+        flameMin = EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_MAX);
+        flameTime = (uint16_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_TIME) * 1000;
+
+        PWM1_setFrequency(fan1Speed);
+
         //UART_writeString("STARTING: Fan 01\n");
         _SM_checkSensors();
         //UART_writeString("STARTING: Fan 02\n");
@@ -525,6 +536,15 @@ static uint8_t _SM_stateStarting(void)
     currentTime = TIME_milis();
     while (currentTime - startTime < dispenserTime)
     {
+        fan1Speed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN_SPEED);
+        fan1Time = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN_TIME) * 1000;
+        dispenserTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_DISPENSER_TIME) * 1000;
+        heaterTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_HEATER_TIME) * 1000;
+        fan2Speed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN2_SPEED);
+        fan2WaitingTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN2_WAITING_TIME) * 1000;
+        flameMin = EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_MAX);
+        flameTime = (uint16_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_TIME) * 1000;
+
         _SM_checkSensors();
 
         currentTime = TIME_milis();
@@ -546,6 +566,15 @@ static uint8_t _SM_stateStarting(void)
     currentTime = TIME_milis();
     while (currentTime - startTime < heaterTime)
     {
+        fan1Speed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN_SPEED);
+        fan1Time = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN_TIME) * 1000;
+        dispenserTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_DISPENSER_TIME) * 1000;
+        heaterTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_HEATER_TIME) * 1000;
+        fan2Speed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN2_SPEED);
+        fan2WaitingTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN2_WAITING_TIME) * 1000;
+        flameMin = EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_MAX);
+        flameTime = (uint16_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_TIME) * 1000;
+
         _SM_checkSensors();
 
         currentTime = TIME_milis();
@@ -564,6 +593,10 @@ static uint8_t _SM_stateStarting(void)
         {
             PWM1_setFrequency(fan2Speed);
             fanStarted = 1;
+        }
+        else if (fanStarted)
+        {
+            PWM1_setFrequency(fan1Speed);
         }
 
         if (g_flame > flameMin)
@@ -610,11 +643,21 @@ static uint8_t _SM_stateStabilisation(void)
 
     for (uint16_t i = 0; i < stabilisationTime; i++)
     {
+        stabilisationTime = EEPROM_readWord(EEPROM_ADDR_STABILISATION_TOTAL_TIME);
+        fanSpeed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_STABILISATION_FAN_SPEED);
+        timeDispenserOn = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STABILISATION_DISPENSER_TIME_ON) * 1000;
+        timeDispenserOff = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STABILISATION_DISPENSER_TIME_OFF) * 1000;
+
         PWM0_setDutyCycle(255);
         startTime = TIME_milis();
         currentTime = TIME_milis();
         while (currentTime - startTime < timeDispenserOn)
         {
+            stabilisationTime = EEPROM_readWord(EEPROM_ADDR_STABILISATION_TOTAL_TIME);
+            fanSpeed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_STABILISATION_FAN_SPEED);
+            timeDispenserOn = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STABILISATION_DISPENSER_TIME_ON) * 1000;
+            timeDispenserOff = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STABILISATION_DISPENSER_TIME_OFF) * 1000;
+
             _SM_checkSensors();
 
             currentTime = TIME_milis();
@@ -637,6 +680,11 @@ static uint8_t _SM_stateStabilisation(void)
         currentTime = TIME_milis();
         while (currentTime - startTime < timeDispenserOff)
         {
+            stabilisationTime = EEPROM_readWord(EEPROM_ADDR_STABILISATION_TOTAL_TIME);
+            fanSpeed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_STABILISATION_FAN_SPEED);
+            timeDispenserOn = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STABILISATION_DISPENSER_TIME_ON) * 1000;
+            timeDispenserOff = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STABILISATION_DISPENSER_TIME_OFF) * 1000;
+
             _SM_checkSensors();
 
             currentTime = TIME_milis();
@@ -825,6 +873,13 @@ static uint8_t _SM_stateStopping(void)
     currentTime = TIME_milis();
     while (running)
     {
+        flameTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_TIME) * 1000;
+        flameMax = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
+        fanSpeed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_SPEED);
+        fanTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_TIME) * 1000;
+
+        PWM1_setFrequency(fanSpeed);
+
         _SM_checkSensors();
 
         currentTime = TIME_milis();
@@ -851,6 +906,11 @@ static uint8_t _SM_stateStopping(void)
     currentTime = TIME_milis();
     while (currentTime - startTime < fanTime)
     {
+        flameTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_TIME) * 1000;
+        flameMax = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
+        fanSpeed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_SPEED);
+        fanTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_TIME) * 1000;
+
         _SM_checkSensors();
 
         currentTime = TIME_milis();
