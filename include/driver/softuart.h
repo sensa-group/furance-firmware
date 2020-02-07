@@ -22,9 +22,9 @@
 
 #include <stdint.h>
 
-#define UART_TX_PORT    PORTB   /*!< GPIO port register for Tx */
-#define UART_TX_DDR     DDRB    /*!< GPIO direction register for Tx */
-#define UART_TX_BIT     PB5     /*!< GPIO pin for Tx */
+#define UART_TX_PORT    PORTD   /*!< GPIO port register for Tx */
+#define UART_TX_DDR     DDRD    /*!< GPIO direction register for Tx */
+#define UART_TX_BIT     PD3     /*!< GPIO pin for Tx */
 #define UART_SOFT_BAUD  9600
 
 /*!

@@ -97,7 +97,8 @@ uint8_t ADC_connected(uint8_t ch)
 
 uint16_t ADC_read(uint8_t ch)
 {
-    //ADCSRA |= (1 << ADEN);
+    ADCSRA |= (1 << ADEN);
+    _delay_ms(100);
 
     // select the corresponding channel 0~7
     // ANDing with '7' will always keep the value
@@ -114,9 +115,11 @@ uint16_t ADC_read(uint8_t ch)
     // till then, run loop continuously
     while(ADCSRA & (1 << ADSC));
 
-    //ADCSRA &= ~(1 << ADEN);
+    ADCSRA &= ~(1 << ADEN);
+    _delay_ms(100);
 
     uint16_t result = ADC;
+    ADC = 0x00;
  
     //return (ADCH << 8) | ADCL;
     return result;

@@ -109,22 +109,61 @@ void SM_init(void)
 
     DEBUG_init();
 
-    UART_init();
-    UART_setReaceiveCallback(_uartCallback);
+    //UART_init();
+    //UART_setReaceiveCallback(_uartCallback);
 
-    pcf8574_init();                                                         // PCF8574 init
+    //pcf8574_init();                                                         // PCF8574 init
 
-    GPIO_init();                                                            // Initialize GPIO (digital input/output pins)
+    //GPIO_init();                                                            // Initialize GPIO (digital input/output pins)
 
-    PWM0_init();                                                            // Initialize PWM0 (DC Motor)
-    PWM1_init();                                                            // Initialize PWM1 (AC Motor -> FAN)
-    PWM2_init();                                                            // Initialize PWM2 ()
+    //PWM0_init();                                                            // Initialize PWM0 (DC Motor)
+    //PWM1_init();                                                            // Initialize PWM1 (AC Motor -> FAN)
+    //PWM2_init();                                                            // Initialize PWM2 ()
 
-    ADC_init();                                                             // Initialize ADC foto resistor
+    //ADC_init();                                                             // Initialize ADC foto resistor
 
-    MCP7940_init();                                                         // Initialize MCP7940 RTC
+    //MCP7940_init();                                                         // Initialize MCP7940 RTC
 
     sei();                                                                  // Enable interrupts
+
+    PORTB &= ~(1 << PB4);
+    //PORTD &= ~(1 << PD1);
+    //DDRF |= (1 << PF7);
+    //PORTF |= (1 << PF7);
+
+    DDRB |= (1 << PB4);
+    PORTB |= (1 << PB4);
+
+    while (1)
+    {
+        DDRB &= ~(1 << PB4);
+        PORTB &= (1 << PB4);
+
+        DDRF |= (1 << PF7);
+        PORTF |= (1 << PF7);
+
+        _delay_ms(100);
+
+        uint8_t ok = (PINB >> PB4) & 0x01;
+
+        DDRB |= (1 << PB4);
+        PORTB |= (1 << PB4);
+
+        DDRF &= ~(1 << PF7);
+        PORTF &= ~(1 << PF7);
+
+        _delay_ms(100);
+
+        if (ok)
+        {
+            
+            DEBUG_printf("ADC: %d\n", ADC_read(0b111));
+        }
+        else
+        {
+            DEBUG_printf("Disconnected\n");
+        }
+    }
 
     //DISPLAY_init();                                                         // Initialize display
 
