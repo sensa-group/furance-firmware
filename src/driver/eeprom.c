@@ -15,11 +15,13 @@
 
 uint16_t EEPROM_readWord(uint16_t addr)
 {
+    eeprom_busy_wait();
     return eeprom_read_word((uint16_t *)addr);
 }
 
 void EEPROM_writeWord(uint16_t addr, uint16_t value)
 {
+    eeprom_busy_wait();
     eeprom_write_word((uint16_t *)addr, value);
 }
 

@@ -109,6 +109,10 @@ void SM_init(void)
 
     DEBUG_init();
 
+    //EEPROM_writeWord(EEPROM_ADDR_STARTING_FLAME_MIN, 0);
+
+    //while (1);
+
     UART_init();
     UART_setReaceiveCallback(_uartCallback);
 
