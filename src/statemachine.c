@@ -44,6 +44,21 @@
 #define _ERROR_TEMPERATURE_DISCONNECTED         2
 #define _ERROR_FLAME_DISCONNECTED               3
 
+/*
+ * For sending to display
+ */
+
+#define _STATE_DEVICE_UNKNOWN               0
+#define _STATE_DEVICE_STOPPED               1
+#define _STATE_DEVICE_VENTILATION           3
+#define _STATE_DEVICE_STARTING              4
+#define _STATE_DEVICE_STABILISATION         5
+#define _STATE_DEVICE_RUNNING               6
+#define _STATE_DEVICE_STOPPING              7
+#define _STATE_DEVICE_WAITING               8
+#define _STATE_DEVICE_SNAIL                 9
+#define _STATE_DEVICE_CRITICAL             10
+
 typedef uint8_t (*ptrStateFunction)(void);
 
 typedef struct
@@ -98,6 +113,8 @@ static uint8_t g_months;
 static uint16_t g_years;
 
 static void _uartCallback(uint8_t *buffer, uint8_t size);
+
+static void _sendState(uint8_t state);
 
 void SM_init(void)
 {
@@ -460,6 +477,8 @@ static uint8_t _SM_stateStopped(void)
 
     TIME_reset();
 
+    _sendState(_STATE_DEVICE_STOPPED);
+
     if (g_error == _ERROR_TEMPERATURE_CRITICAL)
     {
         uint16_t startTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_START);
@@ -500,6 +519,8 @@ static uint8_t _SM_stateStarting(void)
     uint32_t startTime = TIME_milis();
     uint32_t currentTime = TIME_milis();
 
+    _sendState(_STATE_DEVICE_VENTILATION);
+
     PWM1_setFrequency(fan1Speed);
     while (currentTime - startTime < fan1Time)
     {
@@ -534,6 +555,8 @@ static uint8_t _SM_stateStarting(void)
         }
     }
     PWM1_setFrequency(0);
+
+    _sendState(_STATE_DEVICE_STARTING);
 
     PWM0_setDutyCycle(255);
     startTime = TIME_milis();
@@ -643,6 +666,8 @@ static uint8_t _SM_stateStabilisation(void)
         return _RESULT_SUCCESS;
     }
 
+    _sendState(_STATE_DEVICE_STABILISATION);
+
     PWM1_setFrequency(fanSpeed);
 
     for (uint16_t i = 0; i < stabilisationTime; i++)
@@ -725,6 +750,8 @@ static uint8_t _SM_stateRunning(void)
 
     uint32_t startTime = TIME_milis();
     uint32_t currentTime = TIME_milis();
+
+    _sendState(_STATE_DEVICE_RUNNING);
 
     while (1)
     {
@@ -868,6 +895,8 @@ static uint8_t _SM_stateStopping(void)
     uint32_t startTime = TIME_milis();
     uint32_t currentTime = TIME_milis();
 
+    _sendState(_STATE_DEVICE_STOPPING);
+
     PWM0_setDutyCycle(0);
     GPIO_relayOff(GPIO_RELAY_HEATER);
 
@@ -937,6 +966,9 @@ static uint8_t _SM_stateWaiting(void)
 
     TIME_reset();
 
+    
+    _sendState(_STATE_DEVICE_WAITING);
+
     if (g_error == _ERROR_TEMPERATURE_CRITICAL)
     {
         return _RESULT_CRITICAL;
@@ -986,6 +1018,8 @@ static uint8_t _SM_stateCritical(void)
     EEPROM_writeWord(EEPROM_ADDR_SYSTEM_RUNNING, 0);
 
     TIME_reset();
+
+    //_sendState(_STATE_DEVICE_CRITICAL);
     
     PWM0_setDutyCycle(0);
     GPIO_relayOff(GPIO_RELAY_HEATER);
@@ -1097,6 +1131,12 @@ static void _uartCallback(uint8_t *buffer, uint8_t size)
             }
         }
     }
+}
+
+static void _sendState(uint8_t state)
+{
+    uint8_t buffer[] = { UART_ESC, UART_STX, 's', 'c', state, UART_ESC, UART_ETX };
+    UART_writeBuffer(buffer, 7);
 }
 
 /*
