@@ -1086,6 +1086,17 @@ static void _uartCallback(uint8_t *buffer, uint8_t size)
             }
         }
     }
+    else if (buffer[2] == 'r')          // RESET
+    {
+        if (buffer[3] == 'd')           // DEVICE
+        {
+            uint16_t i = 0x00;
+            for (uint16_t i = 0x00; i < 0xFF; i++)
+            {
+                EEPROM_writeWord(i, 0x00);
+            }
+        }
+    }
 }
 
 /*
