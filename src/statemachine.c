@@ -623,7 +623,7 @@ static uint8_t _SM_stateStarting(void)
         }
         else if (fanStarted)
         {
-            PWM1_setFrequency(fan12peed);
+            PWM1_setFrequency(fan2Speed);
         }
 
         if (g_flame > flameMin)
