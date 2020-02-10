@@ -43,16 +43,27 @@ void ADC_init(void)
 
 uint8_t ADC_connected(uint8_t ch)
 {
-    uint8_t result = 1;
+    uint8_t result;
 
-    return 1;
+    DDRB &= ~(1 << PB0);
+    PORTB &= (1 << PB0);
 
-    if ((PINF >> PF7) & 0x01)
-    {
-        return 1;
-    }
+    DDRF |= (1 << PF7);
+    PORTF |= (1 << PF7);
 
-    return 0;
+    _delay_ms(100);
+
+    result = (PINB >> PB0) & 0x01;
+
+    DDRF &= ~(1 << PF7);
+    PORTF &= ~(1 << PF7);
+
+    DDRB |= (1 << PB0);
+    PORTB |= (1 << PB0);
+
+    _delay_ms(100);
+
+    return result;
 
     int totalDiff = 0;
 
@@ -98,6 +109,8 @@ uint8_t ADC_connected(uint8_t ch)
 uint16_t ADC_read(uint8_t ch)
 {
     //ADCSRA |= (1 << ADEN);
+    ADCSRA |= (1 << ADEN);
+    _delay_ms(100);
 
     // select the corresponding channel 0~7
     // ANDing with '7' will always keep the value
@@ -117,6 +130,10 @@ uint16_t ADC_read(uint8_t ch)
     //ADCSRA &= ~(1 << ADEN);
 
     uint16_t result = ADC;
+    ADC = 0x00;
+
+    ADCSRA &= ~(1 << ADEN);
+    _delay_ms(100);
  
     //return (ADCH << 8) | ADCL;
     return result;

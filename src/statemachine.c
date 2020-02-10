@@ -147,6 +147,23 @@ void SM_init(void)
 
     sei();                                                                  // Enable interrupts
 
+    while (1)
+    {
+        DEBUG_printf("NESTO\n");
+    }
+
+    /*
+    while (1)
+    {
+        PWM0_setDutyCycle(0);
+        _delay_ms(1000);
+        PWM0_setDutyCycle(125);
+        _delay_ms(1000);
+        PWM0_setDutyCycle(255);
+        _delay_ms(1000);
+    }
+    */
+
     //DISPLAY_init();                                                         // Initialize display
 
     //MENU_init();                                                            // Initialize menu
@@ -167,7 +184,7 @@ void SM_init(void)
 
         double currentTemp = ds18b20_gettemp();
         uint16_t flame = ADC_read(0b111);
-        flame = (uint16_t)SYSTEM_MAP(flame, 1023.0, 100.0, 0.0, 100.0);
+        flame = (uint16_t)SYSTEM_MAP(flame, 150.0, 1023.0, 0.0, 100.0);
 
         if (currentTemp > flameMin)
         {
@@ -346,7 +363,14 @@ static void _SM_checkSensors(void)
     {
         flame = ADC_read(0b111);
         //flame = (uint16_t)SYSTEM_MAP(flame, 1023.0, 0.0, 0.0, 100.0);
-        flame = (uint16_t)SYSTEM_MAP(flame, 0.0, 1023.0, 0.0, 100.0);
+        if (flame < 150)
+        {
+            flame = 0;
+        }
+        else
+        {
+            flame = (uint16_t)SYSTEM_MAP(flame, 150.0, 1023.0, 0.0, 100.0);
+        }
     }
     else
     {
@@ -481,8 +505,11 @@ static uint8_t _SM_stateStopped(void)
 
     if (g_error == _ERROR_TEMPERATURE_CRITICAL)
     {
+        uint16_t criticalTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
         uint16_t startTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_START);
-        if (g_temperature >= startTemp)
+        uint16_t diffTemp = criticalTemp - startTemp;
+
+        if (g_temperature >= diffTemp)
         {
             return _RESULT_CRITICAL;
         }
@@ -1013,27 +1040,24 @@ static uint8_t _SM_stateSnail(void)
 static uint8_t _SM_stateCritical(void)
 {
     uint8_t fanSpeed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_SPEED);
+    uint16_t criticalTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
     uint16_t minTemperature = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_START);
+    uint16_t waitTemp = criticalTemp - minTemperature;
 
     EEPROM_writeWord(EEPROM_ADDR_SYSTEM_RUNNING, 0);
 
     TIME_reset();
 
-    //_sendState(_STATE_DEVICE_CRITICAL);
+    _sendState(_STATE_DEVICE_CRITICAL);
     
     PWM0_setDutyCycle(0);
     GPIO_relayOff(GPIO_RELAY_HEATER);
 
     PWM1_setFrequency(fanSpeed);
 
-    while (1)
+    while ((uint16_t)g_temperature >= waitTemp)
     {
         _SM_checkSensors();
-
-        if (g_temperature < minTemperature)
-        {
-            break;
-        }
     }
 
     PWM1_setFrequency(0);
@@ -1124,7 +1148,6 @@ static void _uartCallback(uint8_t *buffer, uint8_t size)
     {
         if (buffer[3] == 'd')           // DEVICE
         {
-            uint16_t i = 0x00;
             for (uint16_t i = 0x00; i < 0xFF; i++)
             {
                 EEPROM_writeWord(i, 0x00);
