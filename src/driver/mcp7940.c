@@ -26,10 +26,13 @@ static uint8_t _readRegisterBit(uint8_t reg, uint8_t b);
 static void _setRegisterBit(uint8_t reg, uint8_t b);
 static void _clearRegisterBit(uint8_t reg, uint8_t b);
 
+static int g_initialized = 0;
+
 void MCP7940_init(void)
 {
     MCP7940_deviceStart();
     _setRegisterBit(MCP7940_RTCWKDAY, MCP7940_VBATEN);
+    g_initialized = 1;
     return;
 
     uint8_t crystalStatus = _readRegisterBit(MCP7940_RTCSEC, MCP7940_ST);
@@ -74,6 +77,17 @@ uint8_t MCP7940_deviceStop(void)
 
 void MCP7940_now(uint8_t *ss, uint8_t *mm, uint8_t *hh, uint8_t *d, uint8_t *m, uint16_t *y)
 {
+    if (!g_initialized)
+    {
+        *ss = 0;
+        *mm = 0;
+        *hh = 0;
+        *d = 0;
+        *m = 0;
+        *y = 0;
+        return;
+    }
+
     i2c_start((MCP7940_ADDRESS << 1) | I2C_WRITE);
     i2c_write(MCP7940_RTCSEC);
     i2c_stop();
@@ -93,6 +107,11 @@ void MCP7940_now(uint8_t *ss, uint8_t *mm, uint8_t *hh, uint8_t *d, uint8_t *m, 
 
 void MCP7940_adjust(uint8_t ss, uint8_t mm, uint8_t hh, uint8_t d, uint8_t m, uint16_t y)
 {
+    if (!g_initialized)
+    {
+        return;
+    }
+
     MCP7940_deviceStop();
 
     _writeByte(MCP7940_RTCSEC, _int2bcd(ss));

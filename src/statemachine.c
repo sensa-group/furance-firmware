@@ -124,6 +124,15 @@ void SM_init(void)
     g_error = _ERROR_NO;
     g_lastError = g_error;
 
+    /*
+    DDRB |= (1 << PB5);
+    while (1)
+    {
+        PORTB ^= (1 << PB5);
+        _delay_ms(1000);
+    }
+    */
+
     DEBUG_init();
 
     //EEPROM_writeWord(EEPROM_ADDR_STARTING_FLAME_MIN, 0);
@@ -133,9 +142,9 @@ void SM_init(void)
     UART_init();
     UART_setReaceiveCallback(_uartCallback);
 
-    pcf8574_init();                                                         // PCF8574 init
+    //pcf8574_init();                                                         // PCF8574 init
 
-    GPIO_init();                                                            // Initialize GPIO (digital input/output pins)
+    //GPIO_init();                                                            // Initialize GPIO (digital input/output pins)
 
     PWM0_init();                                                            // Initialize PWM0 (DC Motor)
     PWM1_init();                                                            // Initialize PWM1 (AC Motor -> FAN)
@@ -143,14 +152,35 @@ void SM_init(void)
 
     ADC_init();                                                             // Initialize ADC foto resistor
 
-    MCP7940_init();                                                         // Initialize MCP7940 RTC
+    //MCP7940_init();                                                         // Initialize MCP7940 RTC
 
     sei();                                                                  // Enable interrupts
 
+    /*
     while (1)
     {
-        DEBUG_printf("NESTO\n");
+        GPIO_relayOn(GPIO_RELAY_HEATER);
+        _delay_ms(1000);
+        GPIO_relayOff(GPIO_RELAY_HEATER);
+        _delay_ms(1000);
+        //DEBUG_printf("NESTO\n");
     }
+    */
+
+    /*
+    while (1)
+    {
+        if (ADC_connected(0b111))
+        {
+            uint16_t tmp = ADC_read(0b111);
+            DEBUG_printf("ADC: %d\n", tmp);
+        }
+        else
+        {
+            DEBUG_printf("disconnected\n");
+        }
+    }
+    */
 
     /*
     while (1)
@@ -160,6 +190,27 @@ void SM_init(void)
         PWM0_setDutyCycle(125);
         _delay_ms(1000);
         PWM0_setDutyCycle(255);
+        _delay_ms(1000);
+    }
+    */
+
+    /*
+    while (1)
+    {
+        PWM1_setFrequency(0);
+        _delay_ms(1000);
+        PWM1_setFrequency(50);
+        _delay_ms(1000);
+        PWM1_setFrequency(100);
+        _delay_ms(1000);
+    }
+    */
+
+    /*
+    while (1)
+    {
+        uint16_t temp = (uint16_t)ds18b20_gettemp();
+        DEBUG_printf("TEMP: %d\n", temp);
         _delay_ms(1000);
     }
     */
