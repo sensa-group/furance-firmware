@@ -142,9 +142,9 @@ void SM_init(void)
     UART_init();
     UART_setReaceiveCallback(_uartCallback);
 
-    //pcf8574_init();                                                         // PCF8574 init
+    pcf8574_init();                                                         // PCF8574 init
 
-    //GPIO_init();                                                            // Initialize GPIO (digital input/output pins)
+    GPIO_init();                                                            // Initialize GPIO (digital input/output pins)
 
     PWM0_init();                                                            // Initialize PWM0 (DC Motor)
     PWM1_init();                                                            // Initialize PWM1 (AC Motor -> FAN)
@@ -235,7 +235,7 @@ void SM_init(void)
 
         double currentTemp = ds18b20_gettemp();
         uint16_t flame = ADC_read(0b111);
-        flame = (uint16_t)SYSTEM_MAP(flame, 150.0, 1023.0, 0.0, 100.0);
+        flame = (uint16_t)SYSTEM_MAP(flame, 790.0, 1023.0, 0.0, 100.0);
 
         if (currentTemp > flameMin)
         {
@@ -414,13 +414,13 @@ static void _SM_checkSensors(void)
     {
         flame = ADC_read(0b111);
         //flame = (uint16_t)SYSTEM_MAP(flame, 1023.0, 0.0, 0.0, 100.0);
-        if (flame < 150)
+        if (flame < 790)
         {
             flame = 0;
         }
         else
         {
-            flame = (uint16_t)SYSTEM_MAP(flame, 150.0, 1023.0, 0.0, 100.0);
+            flame = (uint16_t)SYSTEM_MAP(flame, 790.0, 1023.0, 0.0, 100.0);
         }
     }
     else
