@@ -41,6 +41,8 @@
 #define EEPROM_ADDR_STOPPING_FLAME_MAX                      0x64
 #define EEPROM_ADDR_STOPPING_FLAME_TIME                     0x68
 
+#define EEPROM_ADDR_FLAME_CALIBRATION                       0x70
+
 uint16_t EEPROM_readWord(uint16_t add);
 void EEPROM_writeWord(uint16_t addr, uint16_t value);
 

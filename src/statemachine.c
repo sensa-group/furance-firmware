@@ -232,10 +232,11 @@ void SM_init(void)
         //uint16_t startTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
         uint16_t flameMin = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
         //uint16_t flameMax = EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_MAX);
+        uint16_t flameCalib = EEPROM_readWord(EEPROM_ADDR_FLAME_CALIBRATION);
 
         double currentTemp = ds18b20_gettemp();
         uint16_t flame = ADC_read(0b111);
-        flame = (uint16_t)SYSTEM_MAP(flame, 790.0, 1023.0, 0.0, 100.0);
+        flame = (uint16_t)SYSTEM_MAP(flame, flameCalib, 1023.0, 0.0, 100.0);
 
         if (currentTemp > flameMin)
         {
@@ -357,6 +358,7 @@ static void _SM_checkSensors(void)
     uint16_t temperatureCritical = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
     uint16_t temperatureStart = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_START);
     uint16_t flameStart = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
+    uint16_t flameMin = EEPROM_readWord(EEPROM_ADDR_FLAME_CALIBRATION);
     uint16_t flame = 0;
     double temperature = ds18b20_gettemp();
     //= ADC_read(0b111);
@@ -414,13 +416,13 @@ static void _SM_checkSensors(void)
     {
         flame = ADC_read(0b111);
         //flame = (uint16_t)SYSTEM_MAP(flame, 1023.0, 0.0, 0.0, 100.0);
-        if (flame < 790)
+        if (flame < flameMin)
         {
             flame = 0;
         }
         else
         {
-            flame = (uint16_t)SYSTEM_MAP(flame, 790.0, 1023.0, 0.0, 100.0);
+            flame = (uint16_t)SYSTEM_MAP(flame, flameMin, 1023.0, 0.0, 100.0);
         }
     }
     else
@@ -1192,6 +1194,22 @@ static void _uartCallback(uint8_t *buffer, uint8_t size)
             else
             {
                 SM_snailStop();
+            }
+        }
+        else if (buffer[3] == 'f')      // FLAME CALIBRATION
+        {
+            if (ADC_connected(0b111))
+            {
+                uint16_t flameMax = 0;
+                for (uint8_t i = 0; i < 5; i++)
+                {
+                    uint16_t flame = ADC_read(0b111);
+                    if (flame > flameMax)
+                    {
+                        flameMax = flame;
+                    }
+                }
+                EEPROM_writeWord(EEPROM_ADDR_FLAME_CALIBRATION, flameMax);
             }
         }
     }
