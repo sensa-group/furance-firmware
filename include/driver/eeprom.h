@@ -26,6 +26,7 @@
 #define EEPROM_ADDR_STARTING_FAN2_SPEED                     0x2C
 #define EEPROM_ADDR_STARTING_FLAME_MIN                      0x2E
 #define EEPROM_ADDR_STARTING_FLAME_TIME                     0x30
+#define EEPROM_ADDR_STARTING_CLEANER_G_TIME                 0x31
 
 #define EEPROM_ADDR_STABILISATION_TOTAL_TIME                0x40
 #define EEPROM_ADDR_STABILISATION_DISPENSER_TIME_ON         0x42
@@ -35,13 +36,16 @@
 #define EEPROM_ADDR_RUNNING_DISPENSER_TIME_ON               0x50
 #define EEPROM_ADDR_RUNNING_DISPENSER_TIME_OFF              0x52
 #define EEPROM_ADDR_RUNNING_FAN_SPEED                       0x54
+#define EEPROM_ADDR_RUNNING_CLEANER_G_TIME_ON               0x56
+#define EEPROM_ADDR_RUNNING_CLEANER_G_TIME_OFF              0x58
 
 #define EEPROM_ADDR_STOPPING_FAN_TIME                       0x60
 #define EEPROM_ADDR_STOPPING_FAN_SPEED                      0x62
 #define EEPROM_ADDR_STOPPING_FLAME_MAX                      0x64
 #define EEPROM_ADDR_STOPPING_FLAME_TIME                     0x68
+#define EEPROM_ADDR_STOPPING_CLEANER_G_TIME                 0x70
 
-#define EEPROM_ADDR_FLAME_CALIBRATION                       0x70
+#define EEPROM_ADDR_FLAME_CALIBRATION                       0x90
 
 uint16_t EEPROM_readWord(uint16_t add);
 void EEPROM_writeWord(uint16_t addr, uint16_t value);

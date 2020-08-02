@@ -35,6 +35,7 @@
 #define GPIO_RELAY_OPTIONAL             5
 */
 
+#define GPIO_RELAY_OPTIONAL             5
 #define GPIO_RELAY_HEATER               7
 
 //#define GPIO_PCF8574_ID                 28

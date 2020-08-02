@@ -592,6 +592,7 @@ static uint8_t _SM_stateStarting(void)
     uint32_t fan2WaitingTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN2_WAITING_TIME) * 1000;
     uint16_t flameMin = EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_MAX);
     uint32_t flameTime = (uint16_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_TIME) * 1000;
+    uint32_t cleanerGTime = (uint16_t)EEPROM_readWord(EEPROM_ADDR_STARTING_CLEANER_G_TIME) * 60 * 1000;
 
     uint8_t fanStarted = 0;
     uint32_t flameStartTime = 0;
@@ -600,6 +601,8 @@ static uint8_t _SM_stateStarting(void)
     uint32_t currentTime = TIME_milis();
 
     _sendState(_STATE_DEVICE_VENTILATION);
+
+    GPIO_relayOn(GPIO_RELAY_OPTIONAL);
 
     PWM1_setFrequency(fan1Speed);
     while (currentTime - startTime < fan1Time)
@@ -612,6 +615,7 @@ static uint8_t _SM_stateStarting(void)
         fan2WaitingTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FAN2_WAITING_TIME) * 1000;
         flameMin = EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_MAX);
         flameTime = (uint16_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_TIME) * 1000;
+        cleanerGTime = (uint16_t)EEPROM_readWord(EEPROM_ADDR_STARTING_CLEANER_G_TIME) * 60 * 1000;
 
         PWM1_setFrequency(fan1Speed);
 
@@ -633,8 +637,19 @@ static uint8_t _SM_stateStarting(void)
         {
             return _RESULT_ERROR;
         }
+
+        if (currentTime - startTime >= cleanerGTime)
+        {
+            GPIO_relayOff(GPIO_RELAY_OPTIONAL);
+        }
     }
     PWM1_setFrequency(0);
+
+    while (currentTime - startTime < cleanerGTime)
+    {
+        currentTime = TIME_milis();
+    }
+    GPIO_relayOff(GPIO_RELAY_OPTIONAL);
 
     _sendState(_STATE_DEVICE_STARTING);
 
@@ -825,11 +840,15 @@ static uint8_t _SM_stateRunning(void)
     uint16_t flameMax = 0;
     uint32_t flameTime = 0;
     //uint16_t criticalTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
+    uint32_t cleanerGTimeOff = 0;
+    uint32_t cleanerGTimeOn = 0;
 
     uint32_t flameStartTime = 0;
 
     uint32_t startTime = TIME_milis();
     uint32_t currentTime = TIME_milis();
+
+    uint32_t startTimeCleaning = TIME_milis();
 
     _sendState(_STATE_DEVICE_RUNNING);
 
@@ -841,6 +860,8 @@ static uint8_t _SM_stateRunning(void)
         maxTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_MAX);
         flameMax = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
         flameTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_TIME) * 1000;
+        cleanerGTimeOff = (uint32_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_CLEANER_G_TIME_OFF) * 60 * 1000;
+        cleanerGTimeOn = (uint32_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_CLEANER_G_TIME_ON) * 1000;
         //uint16_t criticalTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
 
         PWM1_setFrequency(fanSpeed);
@@ -900,8 +921,34 @@ static uint8_t _SM_stateRunning(void)
                 PWM1_setFrequency(0);
                 return _RESULT_SUCCESS;
             }
+
+            if (currentTime - startTimeCleaning >= cleanerGTimeOff)
+            {
+                startTimeCleaning = TIME_milis();
+
+                GPIO_relayOn(GPIO_RELAY_OPTIONAL);
+                startTime = TIME_milis();
+                while (currentTime - startTime < cleanerGTimeOn)
+                {
+                    currentTime = TIME_milis();
+                }
+                GPIO_relayOff(GPIO_RELAY_OPTIONAL);
+            }
         }
         PWM0_setDutyCycle(0);
+
+        if (currentTime - startTimeCleaning >= cleanerGTimeOff)
+        {
+            startTimeCleaning = TIME_milis();
+
+            GPIO_relayOn(GPIO_RELAY_OPTIONAL);
+            startTime = TIME_milis();
+            while (currentTime - startTime < cleanerGTimeOn)
+            {
+                currentTime = TIME_milis();
+            }
+            GPIO_relayOff(GPIO_RELAY_OPTIONAL);
+        }
 
         startTime = TIME_milis();
         currentTime = TIME_milis();
@@ -957,6 +1004,19 @@ static uint8_t _SM_stateRunning(void)
                 PWM1_setFrequency(0);
                 return _RESULT_SUCCESS;
             }
+
+            if (currentTime - startTimeCleaning >= cleanerGTimeOff)
+            {
+                startTimeCleaning = TIME_milis();
+
+                GPIO_relayOn(GPIO_RELAY_OPTIONAL);
+                startTime = TIME_milis();
+                while (currentTime - startTime < cleanerGTimeOn)
+                {
+                    currentTime = TIME_milis();
+                }
+                GPIO_relayOff(GPIO_RELAY_OPTIONAL);
+            }
         }
     }
 
@@ -969,11 +1029,14 @@ static uint8_t _SM_stateStopping(void)
     uint16_t flameMax = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
     uint8_t fanSpeed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_SPEED);
     uint32_t fanTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_FAN_TIME) * 1000;
+    uint32_t cleanderGTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_CLEANER_G_TIME) * 60 * 1000;
 
     uint8_t running = 1;
 
     uint32_t startTime = TIME_milis();
     uint32_t currentTime = TIME_milis();
+
+    uint32_t startTimeCleaning = TIME_milis();
 
     _sendState(_STATE_DEVICE_STOPPING);
 
@@ -981,6 +1044,7 @@ static uint8_t _SM_stateStopping(void)
     GPIO_relayOff(GPIO_RELAY_HEATER);
 
     PWM1_setFrequency(fanSpeed);
+    GPIO_relayOn(GPIO_RELAY_OPTIONAL);
 
     startTime = TIME_milis();
     currentTime = TIME_milis();
@@ -1013,6 +1077,12 @@ static uint8_t _SM_stateStopping(void)
         {
             startTime = currentTime;
         }
+
+        
+        if (currentTime - startTimeCleaning >= cleanderGTime)
+        {
+            GPIO_relayOff(GPIO_RELAY_OPTIONAL);
+        }
     }
 
     startTime = TIME_milis();
@@ -1028,6 +1098,11 @@ static uint8_t _SM_stateStopping(void)
 
         currentTime = TIME_milis();
 
+        if (currentTime - startTimeCleaning >= cleanderGTime)
+        {
+            GPIO_relayOff(GPIO_RELAY_OPTIONAL);
+        }
+
         if (g_error == _ERROR_TEMPERATURE_CRITICAL)
         {
             return _RESULT_CRITICAL;
@@ -1035,6 +1110,14 @@ static uint8_t _SM_stateStopping(void)
     }
 
     PWM1_setFrequency(0);
+
+    while (currentTime - startTimeCleaning < cleanderGTime)
+    {
+        currentTime = TIME_milis();
+    }
+
+    GPIO_relayOff(GPIO_RELAY_OPTIONAL);
+
     return _RESULT_SUCCESS;
 }
 
