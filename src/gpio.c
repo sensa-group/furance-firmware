@@ -10,8 +10,8 @@
 #include "gpio.h"
 
 #include <avr/io.h>
+#include <util/delay.h>
 
-#include "driver/pcf8574.h"
 #include "driver/uart.h"
 #include "driver/pwm.h"
 
@@ -48,10 +48,52 @@ uint8_t GPIO_switchRead(uint8_t switch_num)
 
 void GPIO_relayOn(uint8_t relay)
 {
-    pcf8574_setoutputpin(GPIO_PCF8574_ID, relay, 1);
+    uint8_t bufferDisplayPause[] = { UART_ESC, UART_STX, 'p', 'p', UART_ESC, UART_ETX };
+
+    while (UART_recevingInProgress())
+    {
+        _delay_ms(1);
+    }
+    UART_writeBuffer(bufferDisplayPause, 6);
+
+    //pcf8574_setoutputpin(GPIO_PCF8574_ID, relay, 1);
+    uint8_t buffer[] = { UART_ESC, UART_STX, 'r', 'n', relay, UART_ESC, UART_ETX };
+    while (UART_recevingInProgress())
+    {
+        _delay_ms(1);
+    }
+    UART_writeBuffer(buffer, 7);
+
+    bufferDisplayPause[3] = 'r';
+    while (UART_recevingInProgress())
+    {
+        _delay_ms(1);
+    }
+    UART_writeBuffer(bufferDisplayPause, 6);
 }
 
 void GPIO_relayOff(uint8_t relay)
 {
-    pcf8574_setoutputpin(GPIO_PCF8574_ID, relay, 0);
+    uint8_t bufferDisplayPause[] = { UART_ESC, UART_STX, 'p', 'p', UART_ESC, UART_ETX };
+
+    while (UART_recevingInProgress())
+    {
+        _delay_ms(1);
+    }
+    UART_writeBuffer(bufferDisplayPause, 6);
+
+    //pcf8574_setoutputpin(GPIO_PCF8574_ID, relay, 1);
+    uint8_t buffer[] = { UART_ESC, UART_STX, 'r', 'f', relay, UART_ESC, UART_ETX };
+    while (UART_recevingInProgress())
+    {
+        _delay_ms(1);
+    }
+    UART_writeBuffer(buffer, 7);
+
+    bufferDisplayPause[3] = 'r';
+    while (UART_recevingInProgress())
+    {
+        _delay_ms(1);
+    }
+    UART_writeBuffer(bufferDisplayPause, 6);
 }

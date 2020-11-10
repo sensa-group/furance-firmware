@@ -2,6 +2,7 @@
 #include "debug.h"
 
 #include <avr/io.h>
+#include <avr/interrupt.h>
 #include <util/delay.h>
 #include <string.h>
 #include <stdarg.h>
@@ -36,7 +37,9 @@ void DEBUG_logString(const char *str)
 #endif // DEBUG_ENABLED
 
 #ifdef DEBUG_SOFTWARE
+    cli();
     uart_tx_str(str);
+    sei();
 #endif // DEBUG_SOFTWARE
 
 #endif // DEBUG_ENABLED
@@ -54,7 +57,9 @@ void DEBUG_logByte(uint8_t data)
 #endif // DEBUG_HARDWARE
 
 #ifdef DEBUG_SOFTWARE
+    cli();
     uart_tx_str(str);
+    sei();
 #endif // DEBUG_SOFTWARE
 
 #endif // DEBUG_ENABLED
@@ -72,7 +77,9 @@ void DEBUG_logInteger(long long data)
 #endif // DEBUG_HARDWARE
 
 #ifdef DEBUG_SOFTWARE
+    cli();
     uart_tx_str(str);
+    sei();
 #endif // DEBUG_SOFTWARE
 
 #endif // DEBUG_ENABLED

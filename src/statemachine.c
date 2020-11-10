@@ -19,10 +19,8 @@
 #include "driver/ds18b20.h"
 #include "driver/adc.h"
 #include "driver/pwm.h"
-#include "driver/pcf8574.h"
 #include "driver/mcp7940.h"
 #include "gpio.h"
-#include "display.h"
 #include "debug.h"
 
 #define _STATE_STOPPED                  0
@@ -139,22 +137,20 @@ void SM_init(void)
 
     //while (1);
 
-    UART_init();
-    UART_setReaceiveCallback(_uartCallback);
+    //UART_init();
+    //UART_setReaceiveCallback(_uartCallback);
 
-    pcf8574_init();                                                         // PCF8574 init
+    //GPIO_init();                                                            // Initialize GPIO (digital input/output pins)
 
-    GPIO_init();                                                            // Initialize GPIO (digital input/output pins)
+    //PWM0_init();                                                            // Initialize PWM0 (DC Motor)
+    //PWM1_init();                                                            // Initialize PWM1 (AC Motor -> FAN)
+    //PWM2_init();                                                            // Initialize PWM2 ()
 
-    PWM0_init();                                                            // Initialize PWM0 (DC Motor)
-    PWM1_init();                                                            // Initialize PWM1 (AC Motor -> FAN)
-    PWM2_init();                                                            // Initialize PWM2 ()
-
-    ADC_init();                                                             // Initialize ADC foto resistor
+    //ADC_init();                                                             // Initialize ADC foto resistor
 
     //MCP7940_init();                                                         // Initialize MCP7940 RTC
 
-    sei();                                                                  // Enable interrupts
+    //sei();                                                                  // Enable interrupts
 
     /*
     while (1)
@@ -163,57 +159,16 @@ void SM_init(void)
         _delay_ms(1000);
         GPIO_relayOff(GPIO_RELAY_HEATER);
         _delay_ms(1000);
-        //DEBUG_printf("NESTO\n");
+        DEBUG_printf("NESTO\n");
     }
     */
 
-    /*
-    while (1)
-    {
-        if (ADC_connected(0b111))
-        {
-            uint16_t tmp = ADC_read(0b111);
-            DEBUG_printf("ADC: %d\n", tmp);
-        }
-        else
-        {
-            DEBUG_printf("disconnected\n");
-        }
-    }
-    */
-
-    /*
-    while (1)
-    {
-        PWM0_setDutyCycle(0);
-        _delay_ms(1000);
-        PWM0_setDutyCycle(125);
-        _delay_ms(1000);
-        PWM0_setDutyCycle(255);
-        _delay_ms(1000);
-    }
-    */
-
-    /*
-    while (1)
-    {
-        PWM1_setFrequency(0);
-        _delay_ms(1000);
-        PWM1_setFrequency(50);
-        _delay_ms(1000);
-        PWM1_setFrequency(100);
-        _delay_ms(1000);
-    }
-    */
-
-    /*
     while (1)
     {
         uint16_t temp = (uint16_t)ds18b20_gettemp();
         DEBUG_printf("TEMP: %d\n", temp);
-        _delay_ms(1000);
+        //_delay_ms(1000);
     }
-    */
 
     //DISPLAY_init();                                                         // Initialize display
 
@@ -223,6 +178,9 @@ void SM_init(void)
     _SM_checkSensors();                                                     // Check sensors for init time
 
     _delay_ms(1000);                                                        // Just in case :D
+
+    //EEPROM_writeWord(EEPROM_ADDR_SYSTEM_RUNNING, 0);
+    //while (1);
 
     if (EEPROM_readWord(EEPROM_ADDR_SYSTEM_RUNNING))
     {
@@ -368,18 +326,70 @@ static void _SM_checkSensors(void)
         g_error = _ERROR_NO;
     }
 
-    uint8_t i = 0;
     uint8_t tmpError = _ERROR_NO;
+
+    double tmpTemp[30];
+    uint8_t tmpTempCount[30];
+    uint8_t tmpTempMax = 0;
+    for (uint8_t i = 0; i < 30; i++)
+    {
+        temperature = ds18b20_gettemp();
+        uint16_t tmp = (uint16_t)temperature;
+
+        if (tmp == 0)
+        {
+            continue;
+        }
+
+        uint8_t add = 1;
+        for (uint8_t j = 0; j < tmpTempMax; j++)
+        {
+            if (tmp == (uint16_t)tmpTemp[j])
+            {
+                tmpTempCount[j]++;
+                add = 0;
+                break;
+            }
+        }
+
+        if (add)
+        {
+            tmpTemp[tmpTempMax] = temperature;
+            tmpTempCount[tmpTempMax] = 1;
+            tmpTempMax++;
+        }
+    }
+
+    if (tmpTempMax > 0)
+    {
+        uint8_t max = 0;
+        for (uint8_t i = 1; i < tmpTempMax; i++)
+        {
+            if (tmpTempCount[tmpTempMax] > tmpTempCount[i])
+            {
+                max = i;
+            }
+        }
+
+        temperature = tmpTemp[max];
+    }
+    else
+    {
+        tmpError = _ERROR_TEMPERATURE_DISCONNECTED;
+    }
+
+    /*
     while (((uint16_t)temperature) == 0)
     {
         temperature = ds18b20_gettemp();
-        if (i > 3)
+        if (i > 15)
         {
             tmpError = _ERROR_TEMPERATURE_DISCONNECTED;
             break;
         }
         i++;
     }
+    */
 
     if (g_error == _ERROR_TEMPERATURE_CRITICAL)
     {
