@@ -155,6 +155,7 @@ ISR(TIMER1_COMPA_vect)
 
 void _readSensors(void)
 {
+    /*
     _temperatureSensorValue;
     _flameSensorValue;
 
@@ -168,6 +169,7 @@ void _readSensors(void)
 
     _temperatureSensorValue = temperatureValue;
     _flameSensorValue = flameValue;
+    */
 }
 
 void _refreshMenu(void)

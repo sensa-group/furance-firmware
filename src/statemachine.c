@@ -16,7 +16,8 @@
 #include "driver/uart.h"
 #include "driver/eeprom.h"
 #include "driver/max6675.h"
-#include "driver/ds18b20.h"
+//#include "driver/ds18b20.h"
+#include "ds18b20/ds18b20.h"
 #include "driver/adc.h"
 #include "driver/pwm.h"
 #include "driver/mcp7940.h"
@@ -96,7 +97,7 @@ static state_t g_states[] = {
 static uint8_t g_currentState;
 
 static double g_temperature = -1.0;
-static double g_flame = 0;
+static double g_flame = -1;
 
 volatile static uint8_t g_snailRunning = 0;
 
@@ -137,20 +138,20 @@ void SM_init(void)
 
     //while (1);
 
-    //UART_init();
-    //UART_setReaceiveCallback(_uartCallback);
+    UART_init();
+    UART_setReaceiveCallback(_uartCallback);
 
-    //GPIO_init();                                                            // Initialize GPIO (digital input/output pins)
+    GPIO_init();                                                            // Initialize GPIO (digital input/output pins)
 
-    //PWM0_init();                                                            // Initialize PWM0 (DC Motor)
-    //PWM1_init();                                                            // Initialize PWM1 (AC Motor -> FAN)
-    //PWM2_init();                                                            // Initialize PWM2 ()
+    PWM0_init();                                                            // Initialize PWM0 (DC Motor)
+    PWM1_init();                                                            // Initialize PWM1 (AC Motor -> FAN)
+    PWM2_init();                                                            // Initialize PWM2 ()
 
-    //ADC_init();                                                             // Initialize ADC foto resistor
+    ADC_init();                                                             // Initialize ADC foto resistor
 
     //MCP7940_init();                                                         // Initialize MCP7940 RTC
 
-    //sei();                                                                  // Enable interrupts
+    sei();                                                                  // Enable interrupts
 
     /*
     while (1)
@@ -163,18 +164,28 @@ void SM_init(void)
     }
     */
 
+    /*
     while (1)
     {
-        uint16_t temp = (uint16_t)ds18b20_gettemp();
+        int temp = 0;
+
+        ds18b20convert(&PORTE, &DDRE, &PINE, ( 1 << 6 ), 0);
+        _delay_ms(1000);
+        ds18b20read(&PORTE, &DDRE, &PINE, ( 1 << 6 ), 0, &temp);
+        temp /= 16;
         DEBUG_printf("TEMP: %d\n", temp);
-        //_delay_ms(1000);
     }
+    */
 
     //DISPLAY_init();                                                         // Initialize display
 
     //MENU_init();                                                            // Initialize menu
 
+    _delay_ms(1000);                                                        // Just in case :D
+
     g_minutes = 0xFF;
+    g_temperature = -1;
+    g_flame = -1;
     _SM_checkSensors();                                                     // Check sensors for init time
 
     _delay_ms(1000);                                                        // Just in case :D
@@ -192,7 +203,13 @@ void SM_init(void)
         //uint16_t flameMax = EEPROM_readWord(EEPROM_ADDR_STOPPING_FLAME_MAX);
         uint16_t flameCalib = EEPROM_readWord(EEPROM_ADDR_FLAME_CALIBRATION);
 
-        double currentTemp = ds18b20_gettemp();
+        //double currentTemp = ds18b20_gettemp();
+        double currentTemp = 0;
+        uint16_t temp;
+        ds18b20convert(&PORTE, &DDRE, &PINE, ( 1 << 6 ), 0);
+        _delay_ms(1000);
+        ds18b20read(&PORTE, &DDRE, &PINE, ( 1 << 6 ), 0, (int *)&temp);
+        currentTemp = temp / 16;
         uint16_t flame = ADC_read(0b111);
         flame = (uint16_t)SYSTEM_MAP(flame, flameCalib, 1023.0, 0.0, 100.0);
 
@@ -318,7 +335,8 @@ static void _SM_checkSensors(void)
     uint16_t flameStart = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
     uint16_t flameMin = EEPROM_readWord(EEPROM_ADDR_FLAME_CALIBRATION);
     uint16_t flame = 0;
-    double temperature = ds18b20_gettemp();
+    //double temperature = ds18b20_gettemp();
+    double temperature = 0;
     //= ADC_read(0b111);
 
     if (g_error != _ERROR_TEMPERATURE_CRITICAL)
@@ -328,50 +346,14 @@ static void _SM_checkSensors(void)
 
     uint8_t tmpError = _ERROR_NO;
 
-    double tmpTemp[30];
-    uint8_t tmpTempCount[30];
-    uint8_t tmpTempMax = 0;
-    for (uint8_t i = 0; i < 30; i++)
+    uint16_t temp = 0;
+    ds18b20convert(&PORTE, &DDRE, &PINE, ( 1 << 6 ), 0);
+    _delay_ms(1000);
+    ds18b20read(&PORTE, &DDRE, &PINE, ( 1 << 6 ), 0, (int *)&temp);
+
+    if (temp != 0)
     {
-        temperature = ds18b20_gettemp();
-        uint16_t tmp = (uint16_t)temperature;
-
-        if (tmp == 0)
-        {
-            continue;
-        }
-
-        uint8_t add = 1;
-        for (uint8_t j = 0; j < tmpTempMax; j++)
-        {
-            if (tmp == (uint16_t)tmpTemp[j])
-            {
-                tmpTempCount[j]++;
-                add = 0;
-                break;
-            }
-        }
-
-        if (add)
-        {
-            tmpTemp[tmpTempMax] = temperature;
-            tmpTempCount[tmpTempMax] = 1;
-            tmpTempMax++;
-        }
-    }
-
-    if (tmpTempMax > 0)
-    {
-        uint8_t max = 0;
-        for (uint8_t i = 1; i < tmpTempMax; i++)
-        {
-            if (tmpTempCount[tmpTempMax] > tmpTempCount[i])
-            {
-                max = i;
-            }
-        }
-
-        temperature = tmpTemp[max];
+        temperature = temp / 16;
     }
     else
     {
@@ -449,7 +431,8 @@ static void _SM_checkSensors(void)
     //g_error = _ERROR_NO;
     //g_flame = flame;            
 
-    if (g_flame != flame || g_temperature != temperature || g_error != _ERROR_NO)
+    //if (g_flame != flame || g_temperature != temperature || g_error != _ERROR_NO)
+    if (1)
     {
         /*
         UART_writeString("T: ");
@@ -803,7 +786,7 @@ static uint8_t _SM_stateStabilisation(void)
                 return _RESULT_CRITICAL;
             }
 
-            if (EEPROM_readWord(EEPROM_ADDR_SYSTEM_RUNNING))
+            if (!EEPROM_readWord(EEPROM_ADDR_SYSTEM_RUNNING))
             {
                 return _RESULT_ERROR;
             }
@@ -862,6 +845,11 @@ static uint8_t _SM_stateRunning(void)
 
     _sendState(_STATE_DEVICE_RUNNING);
 
+    uint8_t dispenserOn = 1;
+    uint8_t cleanerOn = 0;
+
+    PWM1_setFrequency(fanSpeed);
+
     while (1)
     {
         fanSpeed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_FAN_SPEED);
@@ -872,160 +860,112 @@ static uint8_t _SM_stateRunning(void)
         flameTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_TIME) * 1000;
         cleanerGTimeOff = (uint32_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_CLEANER_G_TIME_OFF) * 60 * 1000;
         cleanerGTimeOn = (uint32_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_CLEANER_G_TIME_ON) * 1000;
-        //uint16_t criticalTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
+        //criticalTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
 
         PWM1_setFrequency(fanSpeed);
-
-        PWM0_setDutyCycle(255);
-        startTime = TIME_milis();
         currentTime = TIME_milis();
-        while (currentTime - startTime < timeDispenserOn)
+
+        _SM_checkSensors();
+
+        if (g_flame < flameMax)
         {
-            fanSpeed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_FAN_SPEED);
-            timeDispenserOn = (uint32_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_DISPENSER_TIME_ON) * 1000;
-            timeDispenserOff = (uint32_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_DISPENSER_TIME_OFF) * 1000;
-            maxTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_MAX);
-            flameMax = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
-            flameTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_TIME) * 1000;
-
-            PWM1_setFrequency(fanSpeed);
-
-            _SM_checkSensors();
-
-            currentTime = TIME_milis();
-
-            if (g_flame < flameMax)
+            if (!flameStartTime)
             {
-                if (!flameStartTime)
-                {
-                    flameStartTime = currentTime;
-                }
+                flameStartTime = currentTime;
+            }
+        }
+        else
+        {
+            flameStartTime = 0;
+        }
+
+        if (!EEPROM_readWord(EEPROM_ADDR_SYSTEM_RUNNING))
+        {
+            return _RESULT_ERROR;
+        }
+
+        if (flameStartTime && currentTime - flameStartTime > flameTime)
+        {
+            PWM1_setFrequency(0);
+            PWM0_setDutyCycle(0);
+            return _RESULT_ERROR;
+        }
+
+        if (g_error == _ERROR_TEMPERATURE_CRITICAL)
+        {
+            PWM0_setDutyCycle(0);
+            PWM1_setFrequency(0);
+            return _RESULT_CRITICAL;
+        }
+
+        if (g_temperature >= maxTemp)
+        {
+            PWM0_setDutyCycle(0);
+            PWM1_setFrequency(0);
+            return _RESULT_SUCCESS;
+        }
+
+        /*
+         * Dispenser
+         */
+        if (dispenserOn)
+        {
+            if (currentTime - startTime < timeDispenserOn)
+            {
+                PWM0_setDutyCycle(255);
             }
             else
             {
-                flameStartTime = 0;
-            }
-
-            if (!EEPROM_readWord(EEPROM_ADDR_SYSTEM_RUNNING))
-            {
-                return _RESULT_ERROR;
-            }
-
-            if (flameStartTime && currentTime - flameStartTime > flameTime)
-            {
-                PWM1_setFrequency(0);
                 PWM0_setDutyCycle(0);
-                return _RESULT_ERROR;
-            }
-
-            if (g_error == _ERROR_TEMPERATURE_CRITICAL)
-            {
-                PWM0_setDutyCycle(0);
-                PWM1_setFrequency(0);
-                return _RESULT_CRITICAL;
-            }
-
-            if (g_temperature >= maxTemp)
-            {
-                PWM0_setDutyCycle(0);
-                PWM1_setFrequency(0);
-                return _RESULT_SUCCESS;
-            }
-
-            if (currentTime - startTimeCleaning >= cleanerGTimeOff)
-            {
-                startTimeCleaning = TIME_milis();
-
-                GPIO_relayOn(GPIO_RELAY_OPTIONAL);
-                startTime = TIME_milis();
-                while (currentTime - startTime < cleanerGTimeOn)
-                {
-                    currentTime = TIME_milis();
-                }
-                GPIO_relayOff(GPIO_RELAY_OPTIONAL);
+                dispenserOn = 0;
+                startTime = currentTime;
+                continue;
             }
         }
-        PWM0_setDutyCycle(0);
-
-        if (currentTime - startTimeCleaning >= cleanerGTimeOff)
+        else
         {
-            startTimeCleaning = TIME_milis();
-
-            GPIO_relayOn(GPIO_RELAY_OPTIONAL);
-            startTime = TIME_milis();
-            while (currentTime - startTime < cleanerGTimeOn)
+            if (currentTime - startTime < timeDispenserOff)
             {
-                currentTime = TIME_milis();
-            }
-            GPIO_relayOff(GPIO_RELAY_OPTIONAL);
-        }
-
-        startTime = TIME_milis();
-        currentTime = TIME_milis();
-        while (currentTime - startTime < timeDispenserOff)
-        {
-            fanSpeed = (uint8_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_FAN_SPEED);
-            timeDispenserOn = (uint32_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_DISPENSER_TIME_ON) * 1000;
-            timeDispenserOff = (uint32_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_DISPENSER_TIME_OFF) * 1000;
-            maxTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_MAX);
-            flameMax = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
-            flameTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_TIME) * 1000;
-
-            PWM1_setFrequency(fanSpeed);
-
-            _SM_checkSensors();
-
-            currentTime = TIME_milis();
-
-            if (g_flame < flameMax)
-            {
-                if (!flameStartTime)
-                {
-                    flameStartTime = currentTime;
-                }
+                PWM0_setDutyCycle(0);
             }
             else
             {
-                flameStartTime = 0;
+                PWM0_setDutyCycle(255);
+                dispenserOn = 1;
+                startTime = currentTime;
+                continue;
             }
+        }
 
-            if (!EEPROM_readWord(EEPROM_ADDR_SYSTEM_RUNNING))
+        /*
+         * Cleaner
+         */
+        if (cleanerOn)
+        {
+            if (currentTime - startTimeCleaning < cleanerGTimeOn)
             {
-                return _RESULT_ERROR;
-            }
-
-            if (flameStartTime && currentTime - flameStartTime > flameTime)
-            {
-                PWM1_setFrequency(0);
-                PWM0_setDutyCycle(0);
-                return _RESULT_ERROR;
-            }
-
-            if (g_error == _ERROR_TEMPERATURE_CRITICAL)
-            {
-                PWM0_setDutyCycle(0);
-                PWM1_setFrequency(0);
-                return _RESULT_CRITICAL;
-            }
-
-            if (g_temperature >= maxTemp)
-            {
-                PWM0_setDutyCycle(0);
-                PWM1_setFrequency(0);
-                return _RESULT_SUCCESS;
-            }
-
-            if (currentTime - startTimeCleaning >= cleanerGTimeOff)
-            {
-                startTimeCleaning = TIME_milis();
-
                 GPIO_relayOn(GPIO_RELAY_OPTIONAL);
-                startTime = TIME_milis();
-                while (currentTime - startTime < cleanerGTimeOn)
-                {
-                    currentTime = TIME_milis();
-                }
+            }
+            else
+            {
                 GPIO_relayOff(GPIO_RELAY_OPTIONAL);
+                cleanerOn = 0;
+                startTimeCleaning = currentTime;
+                continue;
+            }
+        }
+        else
+        {
+            if (currentTime - startTimeCleaning < cleanerGTimeOff)
+            {
+                GPIO_relayOff(GPIO_RELAY_OPTIONAL);
+            }
+            else
+            {
+                GPIO_relayOn(GPIO_RELAY_OPTIONAL);
+                cleanerOn = 1;
+                startTimeCleaning = currentTime;
+                continue;
             }
         }
     }
@@ -1123,6 +1063,7 @@ static uint8_t _SM_stateStopping(void)
 
     while (currentTime - startTimeCleaning < cleanderGTime)
     {
+        cleanderGTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STOPPING_CLEANER_G_TIME) * 60 * 1000;
         currentTime = TIME_milis();
     }
 
