@@ -549,6 +549,8 @@ static uint8_t _SM_stateStopped(void)
 
     _sendState(_STATE_DEVICE_STOPPED);
 
+    GPIO_relayOff(GPIO_RELAY_OPTIONAL);
+
     if (g_error == _ERROR_TEMPERATURE_CRITICAL)
     {
         uint16_t criticalTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
@@ -1080,8 +1082,9 @@ static uint8_t _SM_stateWaiting(void)
 
     TIME_reset();
 
-    
     _sendState(_STATE_DEVICE_WAITING);
+
+    GPIO_relayOff(GPIO_RELAY_OPTIONAL);
 
     if (g_error == _ERROR_TEMPERATURE_CRITICAL)
     {
