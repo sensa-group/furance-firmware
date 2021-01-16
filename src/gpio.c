@@ -56,6 +56,7 @@ void GPIO_relayOn(uint8_t relay)
     }
     UART_writeBuffer(bufferDisplayPause, 6);
 
+    _delay_ms(100);
     //pcf8574_setoutputpin(GPIO_PCF8574_ID, relay, 1);
     uint8_t buffer[] = { UART_ESC, UART_STX, 'r', 'n', relay, UART_ESC, UART_ETX };
     while (UART_recevingInProgress())
@@ -64,6 +65,16 @@ void GPIO_relayOn(uint8_t relay)
     }
     UART_writeBuffer(buffer, 7);
 
+    /*
+    char tmp[4];
+    tmp[0] = buffer[2];
+    tmp[1] = buffer[3];
+    tmp[2] = '\n';
+    tmp[3] = '\0';
+    DEBUG_logString(tmp);
+    */
+
+    _delay_ms(100);
     bufferDisplayPause[3] = 'r';
     while (UART_recevingInProgress())
     {
@@ -82,6 +93,7 @@ void GPIO_relayOff(uint8_t relay)
     }
     UART_writeBuffer(bufferDisplayPause, 6);
 
+    _delay_ms(100);
     //pcf8574_setoutputpin(GPIO_PCF8574_ID, relay, 1);
     uint8_t buffer[] = { UART_ESC, UART_STX, 'r', 'f', relay, UART_ESC, UART_ETX };
     while (UART_recevingInProgress())
@@ -90,6 +102,16 @@ void GPIO_relayOff(uint8_t relay)
     }
     UART_writeBuffer(buffer, 7);
 
+    /*
+    char tmp[4];
+    tmp[0] = buffer[2];
+    tmp[1] = buffer[3];
+    tmp[2] = '\n';
+    tmp[3] = '\0';
+    DEBUG_logString(tmp);
+    */
+
+    _delay_ms(100);
     bufferDisplayPause[3] = 'r';
     while (UART_recevingInProgress())
     {

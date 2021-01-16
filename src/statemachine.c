@@ -125,6 +125,28 @@ void SM_init(void)
 
     /*
     DDRB |= (1 << PB5);
+
+    while (1)
+    {
+        PORTB |= (1 << PB5);
+        _delay_ms(1000);
+        PORTB &= ~(1 << PB5);
+        _delay_ms(1000);
+    }
+    */
+
+    /*
+    while (1)
+    {
+        PORTE |= (1 << PE6);
+        _delay_ms(1000);
+        PORTE &= ~(1 << PE6);
+        _delay_ms(1000);
+    }
+    */
+
+    /*
+    DDRB |= (1 << PB5);
     while (1)
     {
         PORTB ^= (1 << PB5);
@@ -152,6 +174,28 @@ void SM_init(void)
     //MCP7940_init();                                                         // Initialize MCP7940 RTC
 
     sei();                                                                  // Enable interrupts
+
+    /*
+    while (1)
+    {
+      GPIO_relayOn(GPIO_RELAY_HEATER);
+      DEBUG_logString("Relay On\n");
+      _delay_ms(1000);
+      GPIO_relayOff(GPIO_RELAY_HEATER);
+      DEBUG_logString("Relay Off\n");
+      _delay_ms(1000);
+    }
+    */
+
+    /*
+    while (1)
+    {
+        PWM0_setDutyCycle(255);
+        _delay_ms(1000);
+        PWM0_setDutyCycle(0);
+        _delay_ms(1000);
+    }
+    */
 
     /*
     while (1)
@@ -322,6 +366,7 @@ void SM_snailStartStop(void)
 
 static void _SM_checkSensors(void)
 {
+    /*
     uint8_t bufferDisplayPause[] = { UART_ESC, UART_STX, 'p', 'p', UART_ESC, UART_ETX };
 
     while (UART_recevingInProgress())
@@ -329,6 +374,7 @@ static void _SM_checkSensors(void)
         _delay_ms(1);
     }
     UART_writeBuffer(bufferDisplayPause, 6);
+    */
 
     uint16_t temperatureCritical = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
     uint16_t temperatureStart = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_START);
@@ -431,6 +477,16 @@ static void _SM_checkSensors(void)
     //g_error = _ERROR_NO;
     //g_flame = flame;            
 
+    uint8_t bufferDisplayPause[] = { UART_ESC, UART_STX, 'p', 'p', UART_ESC, UART_ETX };
+
+    while (UART_recevingInProgress())
+    {
+        _delay_ms(1);
+    }
+    _delay_ms(100);
+    UART_writeBuffer(bufferDisplayPause, 6);
+
+
     //if (g_flame != flame || g_temperature != temperature || g_error != _ERROR_NO)
     if (1)
     {
@@ -451,6 +507,13 @@ static void _SM_checkSensors(void)
         buffer[7] = (uint16_t)flame & 0xFF;
         buffer[8] = ((uint16_t)flameStart >> 8) & 0xFF;
         buffer[9] = (uint16_t)flameStart & 0xFF;
+
+        while (UART_recevingInProgress())
+        {
+            _delay_ms(1);
+        }
+        _delay_ms(100);
+
         UART_writeBuffer(buffer, 12);
         //sei();
     }
@@ -479,6 +542,12 @@ static void _SM_checkSensors(void)
         buffer[8] = g_months;
         buffer[9] = (g_years >> 8) & 0xFF;
         buffer[10] = g_years & 0xFF;
+
+        while (UART_recevingInProgress())
+        {
+            _delay_ms(1);
+        }
+        _delay_ms(100);
         UART_writeBuffer(buffer, 13);
     }
     //sei();
@@ -488,6 +557,11 @@ static void _SM_checkSensors(void)
 
     _SM_checkError();
 
+    while (UART_recevingInProgress())
+    {
+        _delay_ms(1);
+    }
+    _delay_ms(100);
     bufferDisplayPause[3] = 'r';
     UART_writeBuffer(bufferDisplayPause, 6);
 
@@ -508,6 +582,13 @@ static void _SM_checkError(void)
         {
             buffer[4] = g_error;
         }
+
+        while (UART_recevingInProgress())
+        {
+            _delay_ms(1);
+        }
+        _delay_ms(100);
+
         UART_writeBuffer(buffer, 7);
         //sei();
 
