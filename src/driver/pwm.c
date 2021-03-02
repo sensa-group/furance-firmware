@@ -11,6 +11,7 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <util/delay.h>
 
 #include "driver/ds18b20.h"
 #include "driver/adc.h"
@@ -26,6 +27,9 @@ static volatile double _temperatureSensorValue;
 static volatile uint8_t _flameSensorValue;
 
 static volatile uint64_t _time = 0;
+
+int _freqOn = 0;
+int _slowMode = 0;
 
 void _isr1(void);
 void _isr2(void);
@@ -87,24 +91,46 @@ void PWM1_setFrequency(uint32_t frequency)
 {
     cli();
 
-    if (frequency == 100)
+    if (frequency == 0)
     {
-        frequency = 1;
-    }
-    else if (frequency == 0)
-    {
-        frequency = 0;
+        _frequency = 0;
     }
     else
     {
-        frequency = SYSTEM_MAP(frequency, 0, 100, 10, 70);
+        if (frequency < 20)
+        {
+          uint16_t tmp = SYSTEM_MAP(frequency, 0, 100, 50, 700);
+          _slowMode = 1;
+
+          if (_frequency != tmp)
+          {
+              PORTB |= (1 << PB7);
+              _delay_ms(1000);
+              PORTB &= ~(1 << PB7);
+          }
+
+          _frequency = tmp;
+        }
+        else
+        {
+          _frequency = SYSTEM_MAP(frequency, 0, 100, 10, 70);
+          _slowMode = 0;
+        }
     }
 
-    _frequency = frequency;
+    //_frequency = frequency;
     _tick = 0;
     TCNT1 = 0;
 
-    PORTB &= ~(1 << PB7);
+    if (frequency < 100)
+    {
+        PORTB &= ~(1 << PB7);
+    }
+    else
+    {
+        _frequency = 0;
+        PORTB |= (1 << PB7);
+    }
 
     sei();
 }
@@ -184,11 +210,37 @@ void _isr1(void)
         return;
     }
 
-    _tick++;
-    if (_tick > _frequency)
+    if (_slowMode)
     {
-        PORTB ^= (1 << PB7);
-        _tick = 0;
+        if (_freqOn)
+        {
+            _tick++;
+            if (_tick > _frequency)
+            {
+                _freqOn = 0;
+                PORTB &= ~(1 << PB7);
+                _tick = 0;
+            }
+        }
+        else
+        {
+            _tick++;
+            if (_tick > 700)
+            {
+                _freqOn = 1;
+                PORTB |= (1 << PB7);
+                _tick = 0;
+            }
+        }
+    }
+    else
+    {
+        _tick++;
+        if (_tick > _frequency)
+        {
+            PORTB ^= (1 << PB7);
+            _tick = 0;
+        }
     }
 }
 

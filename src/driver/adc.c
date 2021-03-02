@@ -43,6 +43,16 @@ void ADC_init(void)
 
 uint8_t ADC_connected(uint8_t ch)
 {
+    DDRF &= ~(1 << PF7);
+    PORTF &= ~(1 << PF7);
+
+    DDRB |= (1 << PB0);
+    PORTB |= (1 << PB0);
+
+    _delay_ms(100);
+
+    return 1;
+
     uint8_t result;
 
     DDRB &= ~(1 << PB0);

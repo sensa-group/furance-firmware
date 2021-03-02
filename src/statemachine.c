@@ -115,6 +115,8 @@ static void _uartCallback(uint8_t *buffer, uint8_t size);
 
 static void _sendState(uint8_t state);
 
+#define GPIO_RELAY_OPTIONAL GPIO_RELAY_MOTOR2
+
 void SM_init(void)
 {
     cli();
@@ -134,6 +136,19 @@ void SM_init(void)
         _delay_ms(1000);
     }
     */
+
+    /*
+    DDRC |= (1 << PC6);
+
+    while (1)
+    {
+        PORTC |= (1 << PC6);
+        _delay_ms(20000);
+        PORTC &= ~(1 << PC6);
+        _delay_ms(20000);
+    }
+    */
+
 
     /*
     while (1)
@@ -176,6 +191,21 @@ void SM_init(void)
     sei();                                                                  // Enable interrupts
 
     /*
+    PWM1_setFrequency(15);
+    while (1);
+    */
+
+    /*
+    while (1)
+    {
+      GPIO_relayOn(GPIO_RELAY_MOTOR2);
+      _delay_ms(1000);
+      GPIO_relayOff(GPIO_RELAY_MOTOR2);
+      _delay_ms(1000);
+    }
+    */
+
+    /*
     while (1)
     {
       GPIO_relayOn(GPIO_RELAY_HEATER);
@@ -204,7 +234,7 @@ void SM_init(void)
         _delay_ms(1000);
         GPIO_relayOff(GPIO_RELAY_HEATER);
         _delay_ms(1000);
-        DEBUG_printf("NESTO\n");
+        //DEBUG_printf("NESTO\n");
     }
     */
 
@@ -462,6 +492,16 @@ static void _SM_checkSensors(void)
         {
             flame = (uint16_t)SYSTEM_MAP(flame, flameMin, 1023.0, 0.0, 100.0);
         }
+        /*
+        if (flame > flameMin)
+        {
+            flame = 0;
+        }
+        else
+        {
+            flame = (uint16_t)SYSTEM_MAP(flame, 1023.0, flameMin, 0.0, 100.0);
+        }
+        */
     }
     else
     {
@@ -474,7 +514,7 @@ static void _SM_checkSensors(void)
     /*
      * TODO: Only for testing - remove
      */
-    //g_error = _ERROR_NO;
+    g_error = _ERROR_NO;
     //g_flame = flame;            
 
     uint8_t bufferDisplayPause[] = { UART_ESC, UART_STX, 'p', 'p', UART_ESC, UART_ETX };
@@ -941,7 +981,7 @@ static uint8_t _SM_stateRunning(void)
         maxTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_MAX);
         flameMax = EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_MIN);
         flameTime = (uint32_t)EEPROM_readWord(EEPROM_ADDR_STARTING_FLAME_TIME) * 1000;
-        cleanerGTimeOff = (uint32_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_CLEANER_G_TIME_OFF) * 60 * 1000;
+        cleanerGTimeOff = (uint32_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_CLEANER_G_TIME_OFF) * 1000;
         cleanerGTimeOn = (uint32_t)EEPROM_readWord(EEPROM_ADDR_RUNNING_CLEANER_G_TIME_ON) * 1000;
         //criticalTemp = EEPROM_readWord(EEPROM_ADDR_GLOBAL_TEMP_CRITICAL);
 
@@ -1345,8 +1385,29 @@ static void _uartCallback(uint8_t *buffer, uint8_t size)
 
 static void _sendState(uint8_t state)
 {
+    uint8_t bufferDisplayPause[] = { UART_ESC, UART_STX, 'p', 'p', UART_ESC, UART_ETX };
+
+    while (UART_recevingInProgress())
+    {
+        _delay_ms(1);
+    }
+    UART_writeBuffer(bufferDisplayPause, 6);
+
+    while (UART_recevingInProgress())
+    {
+        _delay_ms(1);
+    }
+    _delay_ms(100);
     uint8_t buffer[] = { UART_ESC, UART_STX, 's', 'c', state, UART_ESC, UART_ETX };
     UART_writeBuffer(buffer, 7);
+
+    bufferDisplayPause[3] = 'r';
+    while (UART_recevingInProgress())
+    {
+        _delay_ms(1);
+    }
+    _delay_ms(100);
+    UART_writeBuffer(bufferDisplayPause, 6);
 }
 
 /*
