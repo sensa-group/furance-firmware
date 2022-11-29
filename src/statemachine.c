@@ -1025,6 +1025,7 @@ static uint8_t _SM_stateRunning(void)
         {
             PWM0_setDutyCycle(0);
             PWM1_setFrequency(0);
+            GPIO_relayOff(GPIO_RELAY_OPTIONAL);
             return _RESULT_SUCCESS;
         }
 
@@ -1042,7 +1043,7 @@ static uint8_t _SM_stateRunning(void)
                 PWM0_setDutyCycle(0);
                 dispenserOn = 0;
                 startTime = currentTime;
-                continue;
+                //continue;
             }
         }
         else
@@ -1056,7 +1057,7 @@ static uint8_t _SM_stateRunning(void)
                 PWM0_setDutyCycle(255);
                 dispenserOn = 1;
                 startTime = currentTime;
-                continue;
+                //continue;
             }
         }
 
@@ -1074,7 +1075,7 @@ static uint8_t _SM_stateRunning(void)
                 GPIO_relayOff(GPIO_RELAY_OPTIONAL);
                 cleanerOn = 0;
                 startTimeCleaning = currentTime;
-                continue;
+                //continue;
             }
         }
         else
@@ -1088,7 +1089,7 @@ static uint8_t _SM_stateRunning(void)
                 GPIO_relayOn(GPIO_RELAY_OPTIONAL);
                 cleanerOn = 1;
                 startTimeCleaning = currentTime;
-                continue;
+                //continue;
             }
         }
     }
